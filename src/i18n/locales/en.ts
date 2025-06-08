@@ -68,6 +68,42 @@ export default {
     newFileComment: '-- New Lua file\n-- Add your Adeko macro code here\n\n'
   },
 
+  // File Explorer Context Menu
+  fileExplorer: {
+    newFile: 'New File',
+    newFolder: 'New Folder',
+    rename: 'Rename',
+    delete: 'Delete',
+    copy: 'Copy',
+    cut: 'Cut',
+    paste: 'Paste',
+    refresh: 'Refresh',
+    openInExplorer: 'Open in File Explorer',
+    navigateTo: 'Navigate to Folder',
+    properties: 'Properties',
+    confirmDelete: 'Are you sure you want to delete "{name}"?',
+    confirmDeleteMultiple: 'Are you sure you want to delete {count} items?',
+    enterFileName: 'Enter file name:',
+    enterFolderName: 'Enter folder name:',
+    enterNewName: 'Enter new name:',
+    fileExists: 'A file with this name already exists',
+    folderExists: 'A folder with this name already exists',
+    invalidName: 'Invalid file/folder name',
+    createFileError: 'Failed to create file',
+    createFolderError: 'Failed to create folder',
+    deleteError: 'Failed to delete',
+    renameError: 'Failed to rename',
+    copyError: 'Failed to copy',
+    pasteError: 'Failed to paste',
+    refreshError: 'Failed to refresh directory',
+    noItemsSelected: 'No items selected',
+    cannotCopyToSelf: 'Cannot copy item to itself',
+    cannotMoveToSelf: 'Cannot move item to itself',
+    expandFolder: 'Expand folder',
+    collapseFolder: 'Collapse folder',
+    loadingFolder: 'Loading folder contents...'
+  },
+
   // Error messages
   errors: {
     openingFile: 'Error opening file:',

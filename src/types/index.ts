@@ -3,6 +3,10 @@ export interface FileItem {
   path: string
   isDirectory: boolean
   children?: FileItem[]
+  isExpanded?: boolean
+  isLoading?: boolean
+  depth?: number
+  parentPath?: string
 }
 
 export interface EditorSettings {

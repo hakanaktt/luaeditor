@@ -41,7 +41,6 @@
             <FileExplorer
               v-show="activeTab === 'files'"
               :current-directory="currentDirectory"
-              :lua-library-path="luaLibraryPath"
               :model-library-path="appSettings.model_library_path"
               @file-selected="handleFileSelected"
               @directory-changed="handleDirectoryChanged"
@@ -287,8 +286,8 @@ const handleSettingsUpdated = async (newSettings: AppSettings): Promise<void> =>
       })
       luaLibraryPath.value = calculatedLuaPath
 
-      // Update current directory to lua library path
-      currentDirectory.value = calculatedLuaPath
+      // Update current directory to model library path
+      currentDirectory.value = newSettings.model_library_path
     } catch (error) {
       console.error(t('errors.calculatingLuaPath'), error)
     }
@@ -317,29 +316,25 @@ const loadSettings = async (): Promise<void> => {
           modelLibraryPath: settings.model_library_path
         })
         luaLibraryPath.value = calculatedLuaPath
-        currentDirectory.value = calculatedLuaPath
+        currentDirectory.value = settings.model_library_path
 
-        // Verify the directory exists
-        const dirExists = await invoke<boolean>('is_directory', { path: calculatedLuaPath })
+        // Verify the model library directory exists
+        const dirExists = await invoke<boolean>('is_directory', { path: settings.model_library_path })
         if (!dirExists) {
-          console.warn(`${t('status.directoryNotExist')} ${calculatedLuaPath}`)
-          currentDirectory.value = './LIBRARY/luaLibrary'
-          luaLibraryPath.value = './LIBRARY/luaLibrary'
+          console.warn(`${t('status.directoryNotExist')} ${settings.model_library_path}`)
+          currentDirectory.value = './LIBRARY/modelLibrary'
         }
       } catch (error) {
         console.error(t('errors.calculatingLuaPath'), error)
-        currentDirectory.value = './LIBRARY/luaLibrary'
-        luaLibraryPath.value = './LIBRARY/luaLibrary'
+        currentDirectory.value = './LIBRARY/modelLibrary'
       }
     } else {
-      currentDirectory.value = './LIBRARY/luaLibrary'
-      luaLibraryPath.value = './LIBRARY/luaLibrary'
+      currentDirectory.value = './LIBRARY/modelLibrary'
     }
   } catch (error) {
     console.error(t('errors.loadingSettings'), error)
     // Use default directory if settings can't be loaded
-    currentDirectory.value = './LIBRARY/luaLibrary'
-    luaLibraryPath.value = './LIBRARY/luaLibrary'
+    currentDirectory.value = './LIBRARY/modelLibrary'
   }
 }
 

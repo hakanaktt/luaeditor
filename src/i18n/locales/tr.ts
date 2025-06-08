@@ -68,6 +68,42 @@ export default {
     newFileComment: '-- Yeni Lua dosyası\n-- Adeko makro kodunuzu buraya ekleyin\n\n'
   },
 
+  // Dosya Gezgini Bağlam Menüsü
+  fileExplorer: {
+    newFile: 'Yeni Dosya',
+    newFolder: 'Yeni Klasör',
+    rename: 'Yeniden Adlandır',
+    delete: 'Sil',
+    copy: 'Kopyala',
+    cut: 'Kes',
+    paste: 'Yapıştır',
+    refresh: 'Yenile',
+    openInExplorer: 'Dosya Gezgininde Aç',
+    navigateTo: 'Klasöre Git',
+    properties: 'Özellikler',
+    confirmDelete: '"{name}" dosyasını silmek istediğinizden emin misiniz?',
+    confirmDeleteMultiple: '{count} öğeyi silmek istediğinizden emin misiniz?',
+    enterFileName: 'Dosya adını girin:',
+    enterFolderName: 'Klasör adını girin:',
+    enterNewName: 'Yeni adı girin:',
+    fileExists: 'Bu adda bir dosya zaten mevcut',
+    folderExists: 'Bu adda bir klasör zaten mevcut',
+    invalidName: 'Geçersiz dosya/klasör adı',
+    createFileError: 'Dosya oluşturulamadı',
+    createFolderError: 'Klasör oluşturulamadı',
+    deleteError: 'Silinemedi',
+    renameError: 'Yeniden adlandırılamadı',
+    copyError: 'Kopyalanamadı',
+    pasteError: 'Yapıştırılamadı',
+    refreshError: 'Dizin yenilenemedi',
+    noItemsSelected: 'Hiçbir öğe seçilmedi',
+    cannotCopyToSelf: 'Öğe kendisine kopyalanamaz',
+    cannotMoveToSelf: 'Öğe kendisine taşınamaz',
+    expandFolder: 'Klasörü genişlet',
+    collapseFolder: 'Klasörü daralt',
+    loadingFolder: 'Klasör içeriği yükleniyor...'
+  },
+
   // Hata mesajları
   errors: {
     openingFile: 'Dosya açılırken hata:',

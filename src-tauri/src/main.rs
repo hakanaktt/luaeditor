@@ -157,6 +157,238 @@ fn is_directory(path: String) -> bool {
 }
 
 #[tauri::command]
+fn create_file(path: String, content: Option<String>) -> Result<(), String> {
+    let resolved_path = if path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&path[2..])
+    } else {
+        PathBuf::from(&path)
+    };
+
+    // Create parent directories if they don't exist
+    if let Some(parent) = resolved_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create parent directories: {}", e))?;
+    }
+
+    let file_content = content.unwrap_or_else(|| String::new());
+    fs::write(&resolved_path, file_content)
+        .map_err(|e| format!("Failed to create file: {}", e))
+}
+
+#[tauri::command]
+fn create_directory(path: String) -> Result<(), String> {
+    let resolved_path = if path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&path[2..])
+    } else {
+        PathBuf::from(&path)
+    };
+
+    fs::create_dir_all(&resolved_path)
+        .map_err(|e| format!("Failed to create directory: {}", e))
+}
+
+#[tauri::command]
+fn delete_file_or_directory(path: String) -> Result<(), String> {
+    let resolved_path = if path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&path[2..])
+    } else {
+        PathBuf::from(&path)
+    };
+
+    if !resolved_path.exists() {
+        return Err("File or directory does not exist".to_string());
+    }
+
+    if resolved_path.is_dir() {
+        fs::remove_dir_all(&resolved_path)
+            .map_err(|e| format!("Failed to delete directory: {}", e))
+    } else {
+        fs::remove_file(&resolved_path)
+            .map_err(|e| format!("Failed to delete file: {}", e))
+    }
+}
+
+#[tauri::command]
+fn rename_file_or_directory(old_path: String, new_path: String) -> Result<(), String> {
+    let resolved_old_path = if old_path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&old_path[2..])
+    } else {
+        PathBuf::from(&old_path)
+    };
+
+    let resolved_new_path = if new_path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&new_path[2..])
+    } else {
+        PathBuf::from(&new_path)
+    };
+
+    if !resolved_old_path.exists() {
+        return Err("Source file or directory does not exist".to_string());
+    }
+
+    if resolved_new_path.exists() {
+        return Err("Target file or directory already exists".to_string());
+    }
+
+    fs::rename(&resolved_old_path, &resolved_new_path)
+        .map_err(|e| format!("Failed to rename: {}", e))
+}
+
+#[tauri::command]
+fn copy_file_or_directory(source_path: String, target_path: String) -> Result<(), String> {
+    let resolved_source = if source_path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&source_path[2..])
+    } else {
+        PathBuf::from(&source_path)
+    };
+
+    let resolved_target = if target_path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&target_path[2..])
+    } else {
+        PathBuf::from(&target_path)
+    };
+
+    if !resolved_source.exists() {
+        return Err("Source file or directory does not exist".to_string());
+    }
+
+    if resolved_source.is_dir() {
+        copy_dir_recursive(&resolved_source, &resolved_target)
+    } else {
+        if let Some(parent) = resolved_target.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create target directory: {}", e))?;
+        }
+        fs::copy(&resolved_source, &resolved_target)
+            .map_err(|e| format!("Failed to copy file: {}", e))?;
+        Ok(())
+    }
+}
+
+fn copy_dir_recursive(source: &Path, target: &Path) -> Result<(), String> {
+    fs::create_dir_all(target)
+        .map_err(|e| format!("Failed to create target directory: {}", e))?;
+
+    for entry in fs::read_dir(source)
+        .map_err(|e| format!("Failed to read source directory: {}", e))? {
+        let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+        let source_path = entry.path();
+        let target_path = target.join(entry.file_name());
+
+        if source_path.is_dir() {
+            copy_dir_recursive(&source_path, &target_path)?;
+        } else {
+            fs::copy(&source_path, &target_path)
+                .map_err(|e| format!("Failed to copy file: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct FileItemData {
+    name: String,
+    path: String,
+    is_directory: bool,
+    depth: u32,
+    parent_path: Option<String>,
+}
+
+#[tauri::command]
+fn get_directory_tree(path: String, max_depth: Option<u32>) -> Result<Vec<FileItemData>, String> {
+    let resolved_path = if path.starts_with("./") {
+        let project_root = get_project_root()?;
+        project_root.join(&path[2..])
+    } else {
+        PathBuf::from(&path)
+    };
+
+    let max_depth = max_depth.unwrap_or(1); // Default to 1 level deep
+    let mut items = Vec::new();
+
+    collect_directory_items(&resolved_path, &path, 0, max_depth, &mut items)?;
+
+    // Sort: directories first, then files, both alphabetically within each depth level
+    items.sort_by(|a, b| {
+        // First sort by depth
+        let depth_cmp = a.depth.cmp(&b.depth);
+        if depth_cmp != std::cmp::Ordering::Equal {
+            return depth_cmp;
+        }
+
+        // Then by directory vs file
+        if a.is_directory && !b.is_directory {
+            std::cmp::Ordering::Less
+        } else if !a.is_directory && b.is_directory {
+            std::cmp::Ordering::Greater
+        } else {
+            // Finally by name
+            a.name.cmp(&b.name)
+        }
+    });
+
+    Ok(items)
+}
+
+fn collect_directory_items(
+    dir_path: &Path,
+    logical_path: &str,
+    current_depth: u32,
+    max_depth: u32,
+    items: &mut Vec<FileItemData>,
+) -> Result<(), String> {
+    if current_depth > max_depth {
+        return Ok(());
+    }
+
+    let entries = fs::read_dir(dir_path)
+        .map_err(|e| format!("Failed to read directory '{}': {}", dir_path.display(), e))?;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+        let file_name = entry.file_name();
+        let file_name_str = file_name.to_str().unwrap_or("").to_string();
+
+        if file_name_str.is_empty() {
+            continue;
+        }
+
+        let entry_path = entry.path();
+        let logical_entry_path = format!("{}/{}", logical_path, file_name_str).replace("//", "/");
+        let is_dir = entry_path.is_dir();
+
+        let parent_path = if current_depth == 0 {
+            None
+        } else {
+            Some(logical_path.to_string())
+        };
+
+        items.push(FileItemData {
+            name: file_name_str,
+            path: logical_entry_path.clone(),
+            is_directory: is_dir,
+            depth: current_depth,
+            parent_path,
+        });
+
+        // Recursively collect subdirectory items if we haven't reached max depth
+        if is_dir && current_depth < max_depth {
+            collect_directory_items(&entry_path, &logical_entry_path, current_depth + 1, max_depth, items)?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 fn load_settings() -> Result<AppSettings, String> {
     let settings_path = get_settings_file_path()?;
 
@@ -217,6 +449,12 @@ fn main() {
             read_directory,
             file_exists,
             is_directory,
+            create_file,
+            create_directory,
+            delete_file_or_directory,
+            rename_file_or_directory,
+            copy_file_or_directory,
+            get_directory_tree,
             load_settings,
             save_settings,
             get_lua_library_path
