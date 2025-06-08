@@ -910,6 +910,148 @@ export const allAdekoFunctions: AdekoFunction[] = [
     seeAlso: ['scaleHorizontal', 'scaleVertical']
   },
 
+  // MATHEMATICAL UTILITIES
+  {
+    name: 'unpack',
+    description: 'Alternative to table.unpack for larger tables. Recursively unpacks table elements.',
+    parameters: [
+      { name: 't', type: 'table', description: 'Table to unpack' },
+      { name: 'i', type: 'number', description: 'Starting index', optional: true, defaultValue: 1 }
+    ],
+    returnType: 'multiple',
+    returnDescription: 'All elements of the table as separate return values',
+    example: 'local a, b, c = ADekoLib.unpack({1, 2, 3})',
+    category: 'Utilities',
+    subcategory: 'Data Manipulation',
+    tags: ['unpack', 'table', 'utility'],
+    complexity: 'basic',
+    usage: 'Use as alternative to table.unpack for larger tables',
+    seeAlso: ['deepcopy']
+  },
+  {
+    name: 'quadraticRoots',
+    description: 'Returns quadratic roots of an equation ax² + bx + c = 0.',
+    parameters: [
+      { name: 'a', type: 'number', description: 'Coefficient of x²' },
+      { name: 'b', type: 'number', description: 'Coefficient of x' },
+      { name: 'c', type: 'number', description: 'Constant term' }
+    ],
+    returnType: 'number|boolean',
+    returnDescription: 'Two roots or false if no real roots exist',
+    example: 'local root1, root2 = ADekoLib.quadraticRoots(1, -5, 6)',
+    category: 'Utilities',
+    subcategory: 'Mathematical Functions',
+    tags: ['quadratic', 'roots', 'equation', 'math'],
+    complexity: 'intermediate',
+    usage: 'Use to solve quadratic equations in geometric calculations',
+    seeAlso: ['validateNumber', 'slope']
+  },
+  {
+    name: 'radius',
+    description: 'Returns radius of an arc between two points for a given bulge value.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'First point {x, y}' },
+      { name: 'p2', type: 'table', description: 'Second point {x, y}' },
+      { name: 'bulge', type: 'number', description: 'Bulge value of the arc' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Radius of the arc',
+    example: 'local r = ADekoLib.radius({0, 0}, {10, 0}, 0.5)',
+    category: 'Point & Vector Operations',
+    subcategory: 'Arc Operations',
+    tags: ['radius', 'arc', 'bulge', 'geometry'],
+    complexity: 'intermediate',
+    usage: 'Use to calculate arc radius from bulge values',
+    seeAlso: ['bulge', 'circularArc']
+  },
+  {
+    name: 'validateNumber',
+    description: 'Check if input is actually a practically finite number (not NaN or infinite).',
+    parameters: [
+      { name: 'n', type: 'any', description: 'Value to validate' }
+    ],
+    returnType: 'boolean',
+    returnDescription: 'True if input is a valid finite number',
+    example: 'local isValid = ADekoLib.validateNumber(42.5)',
+    category: 'Analysis & Testing',
+    subcategory: 'Validation',
+    tags: ['validation', 'number', 'finite', 'check'],
+    complexity: 'basic',
+    usage: 'Use to validate numeric inputs before calculations',
+    seeAlso: ['areRoughlyEqual', 'checkFuzzy']
+  },
+  {
+    name: 'yIntercept',
+    description: 'Returns the y-intercept of a line given two points or a point and slope.',
+    parameters: [
+      { name: 'x', type: 'number', description: 'X-coordinate of known point' },
+      { name: 'y', type: 'number', description: 'Y-coordinate of known point' },
+      { name: '...', type: 'number', description: 'Either slope or second point coordinates' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Y-intercept of the line',
+    example: 'local intercept = ADekoLib.yIntercept(2, 5, 1.5) -- point and slope',
+    category: 'Point & Vector Operations',
+    subcategory: 'Line Operations',
+    tags: ['intercept', 'line', 'slope', 'geometry'],
+    complexity: 'intermediate',
+    usage: 'Use to find where a line crosses the Y-axis',
+    seeAlso: ['slope', 'lineLineIntersection']
+  },
+  {
+    name: 'checkInput',
+    description: 'Handle variable-argument functions and whether they are passed as func{table} or func(unpack(table)).',
+    parameters: [
+      { name: '...', type: 'any', description: 'Variable arguments to process' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Normalized input as table',
+    example: 'local input = ADekoLib.checkInput(1, 2, 3)',
+    category: 'Utilities',
+    subcategory: 'Input Processing',
+    tags: ['input', 'arguments', 'variadic', 'utility'],
+    complexity: 'advanced',
+    usage: 'Use internally to handle variable argument functions',
+    seeAlso: ['unpack']
+  },
+  {
+    name: 'slope',
+    description: 'Returns the slope of a line defined by two points.',
+    parameters: [
+      { name: 'x1', type: 'number', description: 'X-coordinate of first point' },
+      { name: 'y1', type: 'number', description: 'Y-coordinate of first point' },
+      { name: 'x2', type: 'number', description: 'X-coordinate of second point' },
+      { name: 'y2', type: 'number', description: 'Y-coordinate of second point' }
+    ],
+    returnType: 'number|boolean',
+    returnDescription: 'Slope of the line or false if vertical line',
+    example: 'local m = ADekoLib.slope(0, 0, 10, 5) -- Returns 0.5',
+    category: 'Point & Vector Operations',
+    subcategory: 'Line Operations',
+    tags: ['slope', 'line', 'gradient', 'geometry'],
+    complexity: 'basic',
+    usage: 'Use to calculate line slope for geometric analysis',
+    seeAlso: ['yIntercept', 'angle']
+  },
+  {
+    name: 'bulge',
+    description: 'Returns the bulge of a line passing through 3 points where p2 is the middle point.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'First point {x, y}' },
+      { name: 'p2', type: 'table', description: 'Middle point {x, y}' },
+      { name: 'p3', type: 'table', description: 'Third point {x, y}' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Bulge value for the arc',
+    example: 'local b = ADekoLib.bulge({0, 0}, {5, 5}, {10, 0})',
+    category: 'Point & Vector Operations',
+    subcategory: 'Arc Operations',
+    tags: ['bulge', 'arc', 'curve', 'geometry'],
+    complexity: 'intermediate',
+    usage: 'Use to calculate bulge values for creating arcs',
+    seeAlso: ['radius', 'circularArc']
+  },
+
   // POLYLINE OPERATIONS (continued)
   {
     name: 'joinPolylines',
@@ -977,5 +1119,656 @@ export const allAdekoFunctions: AdekoFunction[] = [
     complexity: 'advanced',
     usage: 'Use for processing scanned image data or removing noise from 3D polylines',
     seeAlso: ['reducePolyline', 'scaleDepth']
+  },
+
+  // UTILITY FUNCTIONS
+  {
+    name: 'deepcopy',
+    description: 'Copies a table recursively, creating a complete independent copy.',
+    parameters: [
+      { name: 'orig', type: 'table', description: 'Original table to copy' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Deep copy of the original table',
+    example: 'local copy = ADekoLib.deepcopy(originalTable)',
+    category: 'Utilities',
+    subcategory: 'Data Manipulation',
+    tags: ['copy', 'table', 'recursive', 'clone'],
+    complexity: 'basic',
+    usage: 'Use to create independent copies of complex table structures',
+    seeAlso: ['unpack']
+  },
+  {
+    name: 'swap',
+    description: 'Swaps two input values and returns them in reversed order.',
+    parameters: [
+      { name: 'p1', type: 'any', description: 'First value' },
+      { name: 'p2', type: 'any', description: 'Second value' }
+    ],
+    returnType: 'multiple',
+    returnDescription: 'The two values in swapped order',
+    example: 'local b, a = ADekoLib.swap(a, b)',
+    category: 'Utilities',
+    subcategory: 'Data Manipulation',
+    tags: ['swap', 'exchange', 'utility'],
+    complexity: 'basic',
+    usage: 'Use to exchange values or reverse order',
+    seeAlso: ['deepcopy']
+  },
+  {
+    name: 'split',
+    description: 'Single character string splitter that divides a string by a separator.',
+    parameters: [
+      { name: 'inputstr', type: 'string', description: 'String to split' },
+      { name: 'sep', type: 'string', description: 'Separator character', optional: true, defaultValue: 'whitespace' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Array of string parts',
+    example: 'local parts = ADekoLib.split("a,b,c", ",")',
+    category: 'Utilities',
+    subcategory: 'String Processing',
+    tags: ['split', 'string', 'separator', 'parse'],
+    complexity: 'basic',
+    usage: 'Use to parse delimited strings into arrays',
+    seeAlso: ['parseModelParameters']
+  },
+  {
+    name: 'center',
+    description: 'Returns the geometric center (centroid) of a collection of points.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points to find center of' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Center point {x, y}',
+    example: 'local centerPt = ADekoLib.center({{0,0}, {10,0}, {10,10}, {0,10}})',
+    category: 'Point & Vector Operations',
+    subcategory: 'Point Operations',
+    tags: ['center', 'centroid', 'average', 'geometry'],
+    complexity: 'basic',
+    usage: 'Use to find the center point of shapes or point collections',
+    seeAlso: ['sortCCW', 'sortCW']
+  },
+  {
+    name: 'error',
+    description: 'Outputs an error message for a part with context information.',
+    parameters: [
+      { name: 'errorMessage', type: 'string', description: 'Error message to display', optional: true, defaultValue: 'N.A' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Outputs error message to console',
+    example: 'ADekoLib.error("Invalid parameter value")',
+    category: 'Utilities',
+    subcategory: 'Error Handling',
+    tags: ['error', 'message', 'debug', 'output'],
+    complexity: 'basic',
+    usage: 'Use to report errors during script execution',
+    seeAlso: ['productError']
+  },
+  {
+    name: 'productError',
+    description: 'Outputs an error message for a product (module) with context information.',
+    parameters: [
+      { name: 'errorMessage', type: 'string', description: 'Error message to display', optional: true, defaultValue: 'N.A' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Outputs error message to console',
+    example: 'ADekoLib.productError("Product validation failed")',
+    category: 'Utilities',
+    subcategory: 'Error Handling',
+    tags: ['error', 'product', 'message', 'debug'],
+    complexity: 'basic',
+    usage: 'Use to report product-level errors during script execution',
+    seeAlso: ['error']
+  },
+
+  // DEBUGGING & VISUALIZATION
+  {
+    name: 'labelPoints',
+    description: 'Writes index numbers of points at their locations for debugging visualization.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points to label' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Displays point indices as text',
+    example: 'ADekoLib.labelPoints(polygonPoints)',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['label', 'debug', 'visualization', 'text'],
+    complexity: 'basic',
+    usage: 'Use for debugging to see point indices and locations',
+    seeAlso: ['labelPoint', 'showPoints']
+  },
+  {
+    name: 'labelPoint',
+    description: 'Writes a custom message at a specific point location for debugging.',
+    parameters: [
+      { name: 'point', type: 'table', description: 'Point location {x, y}' },
+      { name: 'message', type: 'string', description: 'Message to display' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Displays message as text at point',
+    example: 'ADekoLib.labelPoint({50, 50}, "Center")',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['label', 'debug', 'text', 'annotation'],
+    complexity: 'basic',
+    usage: 'Use to annotate specific points with custom messages',
+    seeAlso: ['labelPoints', 'showPoints']
+  },
+  {
+    name: 'showPar',
+    description: 'Depicts and writes the name of a parameter with visual representation.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'First point {x, y}' },
+      { name: 'p2', type: 'table', description: 'Second point {x, y}' },
+      { name: 'parName', type: 'string', description: 'Parameter name to display' },
+      { name: 'thickness', type: 'number', description: 'Line thickness for visualization' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates visual parameter representation',
+    example: 'ADekoLib.showPar({0, 0}, {100, 0}, "Width", 2)',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['parameter', 'visualization', 'annotation', 'debug'],
+    complexity: 'intermediate',
+    usage: 'Use to visually annotate parameters in technical drawings',
+    seeAlso: ['labelPoint', 'labelPoints']
+  },
+
+  // PART MANAGEMENT
+  {
+    name: 'makePart',
+    description: 'Creates either a rectangle binding box or an arbitrary polygon as the part shape.',
+    parameters: [
+      { name: 'width', type: 'number', description: 'Width of the part' },
+      { name: 'height', type: 'number', description: 'Height of the part' },
+      { name: '...', type: 'table', description: 'Optional polygon points for custom shape', optional: true }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates part geometry',
+    example: 'ADekoLib.makePart(100, 50) -- Rectangle part',
+    category: 'Machining Operations',
+    subcategory: 'Part Creation',
+    tags: ['part', 'shape', 'rectangle', 'polygon'],
+    complexity: 'basic',
+    usage: 'Use to create the basic part shape before adding features',
+    seeAlso: ['makePartShape', 'packIntoPart']
+  },
+  {
+    name: 'makePartShape',
+    description: 'Creates either a rectangle binding box or an arbitrary polygon as the part shape using global dimensions.',
+    parameters: [
+      { name: '...', type: 'table', description: 'Optional polygon points for custom shape', optional: true }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates part geometry using global X,Y dimensions',
+    example: 'ADekoLib.makePartShape() -- Uses global X,Y dimensions',
+    category: 'Machining Operations',
+    subcategory: 'Part Creation',
+    tags: ['part', 'shape', 'global', 'dimensions'],
+    complexity: 'basic',
+    usage: 'Use to create part shape using predefined global dimensions',
+    seeAlso: ['makePart', 'packIntoPart']
+  },
+  {
+    name: 'packIntoPart',
+    description: 'Packs all available geometries created thus far into a part with given properties.',
+    parameters: [
+      { name: 'thisPartIsADoor', type: 'boolean', description: 'Whether this part is a door' },
+      { name: 'ignoreMaterialGrain', type: 'boolean', description: 'Whether to ignore material grain during nesting' },
+      { name: 'description', type: 'string', description: 'Part description' },
+      { name: 'width', type: 'number', description: 'Part width' },
+      { name: 'height', type: 'number', description: 'Part height' },
+      { name: 'name', type: 'string', description: 'Part name identifier' },
+      { name: 'material', type: 'string', description: 'Material type' },
+      { name: 'edgeBandLayerName0', type: 'string', description: 'Edge band layer name for edge 0', optional: true },
+      { name: 'edgeBandThickness0', type: 'number', description: 'Edge band thickness for edge 0', optional: true }
+    ],
+    returnType: 'boolean',
+    returnDescription: 'True if successful',
+    example: 'ADekoLib.packIntoPart(false, false, "Panel", 100, 50, "P1", "MDF", "EDGE", 2)',
+    category: 'Machining Operations',
+    subcategory: 'Part Creation',
+    tags: ['part', 'pack', 'geometry', 'properties'],
+    complexity: 'advanced',
+    usage: 'Use to finalize a part with all its geometries and properties',
+    seeAlso: ['makePart', 'startProduct']
+  },
+  {
+    name: 'partName',
+    description: 'Returns the name of the part at the specified index.',
+    parameters: [
+      { name: 'partIndex', type: 'number', description: 'Index of the part' }
+    ],
+    returnType: 'string',
+    returnDescription: 'Name of the part',
+    example: 'local name = ADekoLib.partName(1)',
+    category: 'Machining Operations',
+    subcategory: 'Part Properties',
+    tags: ['part', 'name', 'property', 'query'],
+    complexity: 'basic',
+    usage: 'Use to retrieve part names for identification',
+    seeAlso: ['partDescription', 'partMaterial']
+  },
+  {
+    name: 'partDescription',
+    description: 'Returns the description of the part at the specified index.',
+    parameters: [
+      { name: 'partIndex', type: 'number', description: 'Index of the part' }
+    ],
+    returnType: 'string',
+    returnDescription: 'Description of the part',
+    example: 'local desc = ADekoLib.partDescription(1)',
+    category: 'Machining Operations',
+    subcategory: 'Part Properties',
+    tags: ['part', 'description', 'property', 'query'],
+    complexity: 'basic',
+    usage: 'Use to retrieve part descriptions',
+    seeAlso: ['partName', 'partMaterial']
+  },
+  {
+    name: 'partMaterial',
+    description: 'Returns the material of the part at the specified index.',
+    parameters: [
+      { name: 'partIndex', type: 'number', description: 'Index of the part' }
+    ],
+    returnType: 'string',
+    returnDescription: 'Material of the part',
+    example: 'local material = ADekoLib.partMaterial(1)',
+    category: 'Machining Operations',
+    subcategory: 'Part Properties',
+    tags: ['part', 'material', 'property', 'query'],
+    complexity: 'basic',
+    usage: 'Use to retrieve part material information',
+    seeAlso: ['partName', 'partDescription']
+  },
+  {
+    name: 'partWidth',
+    description: 'Returns the width of the part at the specified index.',
+    parameters: [
+      { name: 'partIndex', type: 'number', description: 'Index of the part' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Width of the part',
+    example: 'local width = ADekoLib.partWidth(1)',
+    category: 'Machining Operations',
+    subcategory: 'Part Properties',
+    tags: ['part', 'width', 'dimension', 'query'],
+    complexity: 'basic',
+    usage: 'Use to retrieve part width for calculations',
+    seeAlso: ['partHeight', 'partName']
+  },
+  {
+    name: 'partHeight',
+    description: 'Returns the height of the part at the specified index.',
+    parameters: [
+      { name: 'partIndex', type: 'number', description: 'Index of the part' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Height of the part',
+    example: 'local height = ADekoLib.partHeight(1)',
+    category: 'Machining Operations',
+    subcategory: 'Part Properties',
+    tags: ['part', 'height', 'dimension', 'query'],
+    complexity: 'basic',
+    usage: 'Use to retrieve part height for calculations',
+    seeAlso: ['partWidth', 'partName']
+  },
+
+  // COORDINATE SYSTEM & FACE OPERATIONS
+  {
+    name: 'setFace',
+    description: 'Sets face for the next shapes: top, bottom, left, right, front, rear.',
+    parameters: [
+      { name: 'faceName', type: 'string', description: 'Face name: "top", "bottom", "left", "right", "front", "rear"' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Sets the current working face',
+    example: 'ADekoLib.setFace("top")',
+    category: 'Utilities',
+    subcategory: 'Coordinate System',
+    tags: ['face', 'orientation', 'coordinate', 'system'],
+    complexity: 'intermediate',
+    usage: 'Use to set the working face for 3D part operations',
+    seeAlso: ['moveToFace', 'rotation']
+  },
+  {
+    name: 'moveToFace',
+    description: 'Moves the origin of coordinate system to current face.',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Moves coordinate origin to current face',
+    example: 'ADekoLib.moveToFace()',
+    category: 'Utilities',
+    subcategory: 'Coordinate System',
+    tags: ['coordinate', 'origin', 'face', 'transform'],
+    complexity: 'advanced',
+    usage: 'Use to align coordinate system with the current working face',
+    seeAlso: ['setFace', 'translation']
+  },
+  {
+    name: 'rotation',
+    description: 'Returns the rotation matrix elements for a given shape.',
+    parameters: [
+      { name: 'line', type: 'number', description: 'Matrix row (0-2)' },
+      { name: 'column', type: 'number', description: 'Matrix column (0-2)' },
+      { name: 'dataIndex', type: 'number', description: 'Shape data index' },
+      { name: 'partIndex', type: 'number', description: 'Part index', optional: true }
+    ],
+    returnType: 'number',
+    returnDescription: 'Rotation matrix element',
+    example: 'local r11 = ADekoLib.rotation(0, 0, 1)',
+    category: 'Utilities',
+    subcategory: 'Coordinate System',
+    tags: ['rotation', 'matrix', 'transform', 'orientation'],
+    complexity: 'advanced',
+    usage: 'Use to get rotation matrix elements for 3D transformations',
+    seeAlso: ['translation', 'multiplyRotationMatrixes']
+  },
+  {
+    name: 'translation',
+    description: 'Returns the translation matrix elements for a given shape.',
+    parameters: [
+      { name: 'line', type: 'number', description: 'Matrix row (0-2)' },
+      { name: 'dataIndex', type: 'number', description: 'Shape data index' },
+      { name: 'partIndex', type: 'number', description: 'Part index', optional: true }
+    ],
+    returnType: 'number',
+    returnDescription: 'Translation matrix element',
+    example: 'local tx = ADekoLib.translation(0, 1)',
+    category: 'Utilities',
+    subcategory: 'Coordinate System',
+    tags: ['translation', 'matrix', 'transform', 'position'],
+    complexity: 'advanced',
+    usage: 'Use to get translation matrix elements for 3D transformations',
+    seeAlso: ['rotation', 'translationOffset']
+  },
+  {
+    name: 'translationOffset',
+    description: 'Scales the unit translation matrix.',
+    parameters: [
+      { name: 'unitTranslation', type: 'table', description: 'Unit translation vector' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Scaled translation vector',
+    example: 'local scaled = ADekoLib.translationOffset({1, 0, 0})',
+    category: 'Utilities',
+    subcategory: 'Coordinate System',
+    tags: ['translation', 'scale', 'matrix', 'offset'],
+    complexity: 'advanced',
+    usage: 'Use to scale translation vectors for coordinate transformations',
+    seeAlso: ['translation', 'rotation']
+  },
+  {
+    name: 'multiplyRotationMatrixes',
+    description: 'Returns the product of two 3x3 rotation matrices.',
+    parameters: [
+      { name: 'm1', type: 'table', description: 'First 3x3 rotation matrix' },
+      { name: 'm2', type: 'table', description: 'Second 3x3 rotation matrix' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Product of the two matrices',
+    example: 'local result = ADekoLib.multiplyRotationMatrixes(matrix1, matrix2)',
+    category: 'Utilities',
+    subcategory: 'Coordinate System',
+    tags: ['matrix', 'multiplication', 'rotation', 'transform'],
+    complexity: 'advanced',
+    usage: 'Use to combine rotation transformations',
+    seeAlso: ['rotation', 'areRotationsEqual']
+  },
+
+  // LAYER & THICKNESS CONTROL
+  {
+    name: 'setLayer',
+    description: 'Sets layername for the next shape.',
+    parameters: [
+      { name: 'layerName', type: 'string', description: 'Name of the layer' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Sets current layer',
+    example: 'ADekoLib.setLayer("PANEL")',
+    category: 'Utilities',
+    subcategory: 'Layer Management',
+    tags: ['layer', 'organization', 'cad'],
+    complexity: 'basic',
+    usage: 'Use to organize shapes into different layers',
+    seeAlso: ['layerName', 'setThickness']
+  },
+  {
+    name: 'setThickness',
+    description: 'Sets thickness for the next shape.',
+    parameters: [
+      { name: 'thickness', type: 'number', description: 'Thickness value (negative for cuts)' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Sets current thickness',
+    example: 'ADekoLib.setThickness(-5) -- 5mm deep cut',
+    category: 'Utilities',
+    subcategory: 'Layer Management',
+    tags: ['thickness', 'depth', 'machining'],
+    complexity: 'basic',
+    usage: 'Use to set cutting depth or material thickness',
+    seeAlso: ['thickness', 'setLayer']
+  },
+  {
+    name: 'layerName',
+    description: 'Returns the layername for a given shape.',
+    parameters: [
+      { name: 'dataIndex', type: 'number', description: 'Shape index' },
+      { name: 'partIndex', type: 'number', description: 'Part index', optional: true }
+    ],
+    returnType: 'string',
+    returnDescription: 'Layer name of the shape',
+    example: 'local layer = ADekoLib.layerName(1)',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['layer', 'query', 'organization'],
+    complexity: 'basic',
+    usage: 'Use to get the layer name of a specific shape',
+    seeAlso: ['setLayer', 'thickness']
+  },
+  {
+    name: 'thickness',
+    description: 'Returns the thickness or depth for a given shape.',
+    parameters: [
+      { name: 'dataIndex', type: 'number', description: 'Shape index' },
+      { name: 'partIndex', type: 'number', description: 'Part index', optional: true }
+    ],
+    returnType: 'number',
+    returnDescription: 'Thickness value of the shape',
+    example: 'local thick = ADekoLib.thickness(1)',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['thickness', 'depth', 'query'],
+    complexity: 'basic',
+    usage: 'Use to get the thickness value of a specific shape',
+    seeAlso: ['setThickness', 'layerName']
+  },
+
+  // MISSING REFERENCE FUNCTIONS
+  {
+    name: 'point',
+    description: 'Creates points with bulges. Alternative name for node() function.',
+    parameters: [
+      { name: 'x', type: 'number', description: 'X-coordinate' },
+      { name: 'y', type: 'number', description: 'Y-coordinate' },
+      { name: 'z', type: 'number', description: 'Z-coordinate', optional: true, defaultValue: 0 },
+      { name: 'bulge', type: 'number', description: 'Bulge value for arc', optional: true, defaultValue: 0 }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates a point in current shape',
+    example: 'ADekoLib.point(10, 20, 0, 0)',
+    category: 'Shape Generation',
+    subcategory: 'Point Creation',
+    tags: ['point', 'vertex', 'bulge', 'coordinate'],
+    complexity: 'basic',
+    usage: 'Use to create individual points when building shapes manually',
+    seeAlso: ['node', 'nextShape']
+  },
+  {
+    name: 'nextShape',
+    description: 'Ends the creation of current shape and starts a new one.',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Advances to next shape',
+    example: 'ADekoLib.nextShape() -- Start new shape',
+    category: 'Shape Generation',
+    subcategory: 'Shape Control',
+    tags: ['shape', 'control', 'sequence'],
+    complexity: 'intermediate',
+    usage: 'Use when creating shapes point by point to start a new shape',
+    seeAlso: ['point', 'node']
+  },
+  {
+    name: 'enableListing',
+    description: 'Enables/disables output of created shape points hierarchically at the end of interpretation.',
+    parameters: [
+      { name: 'enable', type: 'boolean', description: 'True to enable listing, false to disable' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Sets listing mode',
+    example: 'ADekoLib.enableListing(true)',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['listing', 'debug', 'output', 'hierarchy'],
+    complexity: 'basic',
+    usage: 'Use to control whether shape points are listed after interpretation',
+    seeAlso: ['list', 'showPoints']
+  },
+  {
+    name: 'list',
+    description: 'Prints out all entities currently created.',
+    parameters: [
+      { name: 'what', type: 'string', description: 'What to list', optional: true }
+    ],
+    returnType: 'void',
+    returnDescription: 'Outputs entity list to console',
+    example: 'ADekoLib.list()',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['list', 'debug', 'entities', 'output'],
+    complexity: 'basic',
+    usage: 'Use to see all created shapes and their properties',
+    seeAlso: ['enableListing', 'dataSize']
+  },
+  {
+    name: 'deleteLastShape',
+    description: 'Deletes the last shape created. Used internally.',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Removes last shape',
+    example: 'ADekoLib.deleteLastShape() -- Internal use',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['delete', 'shape', 'internal', 'undo'],
+    complexity: 'advanced',
+    usage: 'Internal function - use with caution',
+    seeAlso: ['deleteLastPoint', 'nextShape']
+  },
+  {
+    name: 'deleteLastPoint',
+    description: 'Deletes the last point created. Used internally.',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Removes last point',
+    example: 'ADekoLib.deleteLastPoint() -- Internal use',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['delete', 'point', 'internal', 'undo'],
+    complexity: 'advanced',
+    usage: 'Internal function - use with caution',
+    seeAlso: ['deleteLastShape', 'point']
+  },
+  {
+    name: 'nextPoint',
+    description: 'Moves the point index forward. Used internally. Alternative name for nextNode().',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Advances to next point',
+    example: 'ADekoLib.nextPoint() -- Internal use',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['internal', 'point', 'index', 'advance'],
+    complexity: 'advanced',
+    usage: 'Internal function for point management',
+    seeAlso: ['nextNode', 'point']
+  },
+  {
+    name: 'start',
+    description: 'Starts the creation of part. Used internally.',
+    parameters: [],
+    returnType: 'boolean',
+    returnDescription: 'True if successful',
+    example: 'ADekoLib.start() -- Internal use only',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['internal', 'system', 'initialization'],
+    complexity: 'advanced',
+    usage: 'Internal function - not typically used directly by users',
+    seeAlso: ['finish', 'startProduct']
+  },
+  {
+    name: 'finish',
+    description: 'Finishes the creation of shapes of part. Used internally.',
+    parameters: [],
+    returnType: 'boolean',
+    returnDescription: 'True if successful',
+    example: 'ADekoLib.finish() -- Internal use only',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['internal', 'system', 'finalization'],
+    complexity: 'advanced',
+    usage: 'Internal function - not typically used directly by users',
+    seeAlso: ['start', 'finishProduct']
+  },
+  {
+    name: 'dataSize',
+    description: 'Returns the number of individual shapes.',
+    parameters: [
+      { name: 'partIndex', type: 'number', description: 'Part index', optional: true }
+    ],
+    returnType: 'number',
+    returnDescription: 'Number of shapes',
+    example: 'local count = ADekoLib.dataSize()',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['data', 'count', 'shapes', 'query'],
+    complexity: 'basic',
+    usage: 'Use to get the number of shapes in current part or specified part',
+    seeAlso: ['pointSize', 'list']
+  },
+  {
+    name: 'pointSize',
+    description: 'Returns the number of points for a given shape. Alternative name for nodeSize().',
+    parameters: [
+      { name: 'dataIndex', type: 'number', description: 'Shape index' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Number of points in the shape',
+    example: 'local pointCount = ADekoLib.pointSize(1)',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['points', 'count', 'query', 'shape'],
+    complexity: 'basic',
+    usage: 'Use to get the number of points in a specific shape',
+    seeAlso: ['dataSize', 'pointFeature']
+  },
+  {
+    name: 'pointFeature',
+    description: 'Returns x, y, z, and bulge of a point for a given shape. Alternative name for nodeFeature().',
+    parameters: [
+      { name: 'xyzbulge', type: 'number', description: 'Feature type: 0=X, 1=Y, 2=Z, 3=bulge' },
+      { name: 'dataIndex', type: 'number', description: 'Shape index' },
+      { name: 'pointIndex', type: 'number', description: 'Point index' }
+    ],
+    returnType: 'number',
+    returnDescription: 'The requested coordinate or bulge value',
+    example: 'local x = ADekoLib.pointFeature(0, 1, 1) -- Get X of first point',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['point', 'coordinate', 'bulge', 'query'],
+    complexity: 'intermediate',
+    usage: 'Use to extract specific coordinate values from points',
+    seeAlso: ['pointSize', 'dataSize']
   }
 ]

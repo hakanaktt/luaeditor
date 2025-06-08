@@ -96,7 +96,7 @@ const initializeEditor = (): void => {
       '%=', '<<=', '>>=', '>>>='
     ],
 
-    symbols: /[=><!~?:&|+\-*\/\^%]+/,
+    symbols: /[=><!~?:&|+\-*/^%]+/,
 
     tokenizer: {
       root: [
