@@ -13,19 +13,48 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- File Explorer -->
       <div class="w-64 bg-gray-50 border-r border-gray-200">
-        <FileExplorer
-          :current-directory="currentDirectory"
-          :lua-library-path="luaLibraryPath"
-          :model-library-path="appSettings.model_library_path"
-          @file-selected="handleFileSelected"
-          @directory-changed="handleDirectoryChanged"
-        />
+        <div class="h-full flex flex-col">
+          <!-- Tab Navigation -->
+          <div class="flex border-b border-gray-200">
+            <button
+              :class="['flex-1 px-3 py-2 text-sm font-medium',
+                       activeTab === 'files' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700']"
+              @click="activeTab = 'files'"
+            >
+              Files
+            </button>
+            <button
+              :class="['flex-1 px-3 py-2 text-sm font-medium',
+                       activeTab === 'functions' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700']"
+              @click="activeTab = 'functions'"
+            >
+              Functions
+            </button>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="flex-1 overflow-hidden">
+            <FileExplorer
+              v-show="activeTab === 'files'"
+              :current-directory="currentDirectory"
+              :lua-library-path="luaLibraryPath"
+              :model-library-path="appSettings.model_library_path"
+              @file-selected="handleFileSelected"
+              @directory-changed="handleDirectoryChanged"
+            />
+            <FunctionBrowser
+              v-show="activeTab === 'functions'"
+              :on-insert-function="handleInsertFunction"
+            />
+          </div>
+        </div>
       </div>
-      
+
       <!-- Editor Area -->
       <div class="flex-1 flex flex-col">
-        <Editor 
+        <Editor
           v-if="currentFile"
+          ref="editorRef"
           :file-content="currentFileContent"
           :file-path="currentFile"
           @content-changed="handleContentChanged"
@@ -33,7 +62,7 @@
         <div v-else class="flex-1 flex items-center justify-center text-gray-500">
           <div class="text-center">
             <h2 class="text-xl mb-2">Welcome to Lua Macro Editor</h2>
-            <p>Open a file to start editing</p>
+            <p>Open a file to start editing or browse AdekoLib functions</p>
           </div>
         </div>
       </div>
@@ -67,6 +96,7 @@ import Toolbar from './components/Toolbar.vue'
 import FileExplorer from './components/FileExplorer.vue'
 import Editor from './components/Editor.vue'
 import SettingsModal from './components/SettingsModal.vue'
+import FunctionBrowser from './components/FunctionBrowser.vue'
 import type { AppSettings } from './types'
 
 const currentDirectory = ref<string>('')
@@ -74,6 +104,8 @@ const currentFile = ref<string | null>(null)
 const currentFileContent = ref<string>('')
 const isModified = ref<boolean>(false)
 const showSettingsModal = ref<boolean>(false)
+const activeTab = ref<'files' | 'functions'>('files')
+const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary'
 })
@@ -163,6 +195,14 @@ const handleDirectoryChanged = (newDirectory: string): void => {
 const handleContentChanged = (newContent: string): void => {
   currentFileContent.value = newContent
   isModified.value = true
+}
+
+const handleInsertFunction = (functionCall: string): void => {
+  if (editorRef.value) {
+    editorRef.value.insertText(functionCall)
+    // Switch to files tab to see the editor
+    activeTab.value = 'files'
+  }
 }
 
 const handleSettingsUpdated = async (newSettings: AppSettings): Promise<void> => {

@@ -17,7 +17,14 @@ export interface AdekoFunction {
   description: string
   parameters: Parameter[]
   returnType: string
-  example?: string
+  returnDescription: string
+  example: string
+  category: string
+  subcategory?: string
+  tags: string[]
+  complexity: 'basic' | 'intermediate' | 'advanced'
+  usage?: string
+  seeAlso?: string[]
 }
 
 export interface Parameter {
@@ -25,6 +32,7 @@ export interface Parameter {
   type: string
   description: string
   optional?: boolean
+  defaultValue?: any
 }
 
 export interface MacroTemplate {
@@ -36,4 +44,44 @@ export interface MacroTemplate {
 
 export interface AppSettings {
   model_library_path?: string
+}
+
+// Function category structure for organizing functions
+export interface FunctionCategory {
+  name: string
+  description: string
+  icon: string
+  subcategories?: FunctionSubcategory[]
+}
+
+export interface FunctionSubcategory {
+  name: string
+  description: string
+  functions: string[] // function names
+}
+
+// IntelliSense suggestion
+export interface IntelliSenseSuggestion {
+  label: string
+  kind: 'function' | 'variable' | 'keyword' | 'constant'
+  detail: string
+  documentation: string
+  insertText: string
+  filterText: string
+  sortText: string
+  range?: {
+    startLineNumber: number
+    endLineNumber: number
+    startColumn: number
+    endColumn: number
+  }
+}
+
+// Function search and filtering
+export interface FunctionFilter {
+  category?: string
+  subcategory?: string
+  complexity?: 'basic' | 'intermediate' | 'advanced'
+  tags?: string[]
+  searchTerm?: string
 }

@@ -22,6 +22,7 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { FileText } from 'lucide-vue-next'
 import * as monaco from 'monaco-editor'
+import { monacoIntelliSenseService } from '../services/monacoIntellisense'
 
 interface Props {
   fileContent: string
@@ -169,7 +170,41 @@ const initializeEditor = (): void => {
     currentLine.value = e.position.lineNumber
     currentColumn.value = e.position.column
   })
+
+  // Initialize IntelliSense
+  monacoIntelliSenseService.initialize(editor)
 }
+
+// Expose methods for parent component
+const insertText = (text: string): void => {
+  if (!editor) return
+
+  const position = editor.getPosition()
+  if (!position) return
+
+  editor.executeEdits('insert-text', [{
+    range: {
+      startLineNumber: position.lineNumber,
+      endLineNumber: position.lineNumber,
+      startColumn: position.column,
+      endColumn: position.column
+    },
+    text: text
+  }])
+
+  // Focus the editor and position cursor after inserted text
+  editor.focus()
+  const newPosition = {
+    lineNumber: position.lineNumber,
+    column: position.column + text.length
+  }
+  editor.setPosition(newPosition)
+}
+
+// Expose the insertText method
+defineExpose({
+  insertText
+})
 
 // Watch for file content changes
 watch(() => props.fileContent, (newContent) => {
@@ -184,6 +219,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (editor) {
+    monacoIntelliSenseService.dispose()
     editor.dispose()
   }
 })
