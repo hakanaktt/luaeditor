@@ -6,7 +6,7 @@
         <input
           v-model="searchTerm"
           type="text"
-          placeholder="Search functions..."
+          :placeholder="$t('functions.searchPlaceholder')"
           class="search-input"
           @input="onSearchChange"
         />
@@ -15,17 +15,17 @@
       
       <div class="filters">
         <select v-model="selectedCategory" @change="onCategoryChange" class="filter-select">
-          <option value="">All Categories</option>
+          <option value="">{{ $t('functions.allCategories') }}</option>
           <option v-for="category in categories" :key="category.name" :value="category.name">
             {{ category.icon }} {{ category.name }}
           </option>
         </select>
-        
+
         <select v-model="selectedComplexity" @change="onFilterChange" class="filter-select">
-          <option value="">All Levels</option>
-          <option value="basic">Basic</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
+          <option value="">{{ $t('functions.allLevels') }}</option>
+          <option value="basic">{{ $t('functions.basic') }}</option>
+          <option value="intermediate">{{ $t('functions.intermediate') }}</option>
+          <option value="advanced">{{ $t('functions.advanced') }}</option>
         </select>
       </div>
     </div>
@@ -42,7 +42,7 @@
         <div class="category-name">{{ category.name }}</div>
         <div class="category-description">{{ category.description }}</div>
         <div class="function-count">
-          {{ getFunctionCount(category.name) }} functions
+          {{ getFunctionCount(category.name) }} {{ $t('functions.functionsCount') }}
         </div>
       </div>
     </div>
@@ -93,7 +93,7 @@
       <div class="details-header">
         <h3>{{ selectedFunction.name }}</h3>
         <button class="insert-btn" @click="insertFunction">
-          <Plus /> Insert Function
+          <Plus /> {{ $t('functions.insertFunction') }}
         </button>
       </div>
       
@@ -101,33 +101,33 @@
         <p class="description">{{ selectedFunction.description }}</p>
         
         <div class="parameters-section">
-          <h4>Parameters</h4>
+          <h4>{{ $t('functions.parameters') }}</h4>
           <div v-for="param in selectedFunction.parameters" :key="param.name" class="parameter">
             <span class="param-name">{{ param.name }}</span>
             <span class="param-type">{{ param.type }}</span>
-            <span v-if="param.optional" class="param-optional">optional</span>
+            <span v-if="param.optional" class="param-optional">{{ $t('functions.optional') }}</span>
             <p class="param-description">{{ param.description }}</p>
           </div>
         </div>
 
         <div class="returns-section">
-          <h4>Returns</h4>
+          <h4>{{ $t('functions.returns') }}</h4>
           <span class="return-type">{{ selectedFunction.returnType }}</span>
           <p class="return-description">{{ selectedFunction.returnDescription }}</p>
         </div>
 
         <div class="example-section">
-          <h4>Example</h4>
+          <h4>{{ $t('functions.example') }}</h4>
           <pre class="code-example">{{ selectedFunction.example }}</pre>
         </div>
 
         <div v-if="selectedFunction.usage" class="usage-section">
-          <h4>Usage</h4>
+          <h4>{{ $t('functions.usage') }}</h4>
           <p>{{ selectedFunction.usage }}</p>
         </div>
 
         <div v-if="relatedFunctions.length > 0" class="related-section">
-          <h4>Related Functions</h4>
+          <h4>{{ $t('functions.relatedFunctions') }}</h4>
           <div class="related-functions">
             <button
               v-for="related in relatedFunctions"
@@ -231,7 +231,7 @@ const insertFunction = () => {
   if (!selectedFunction.value) return
   
   const func = selectedFunction.value
-  const paramPlaceholders = func.parameters.map((p, i) => 
+  const paramPlaceholders = func.parameters.map((p) =>
     `${p.name}`
   ).join(', ')
   

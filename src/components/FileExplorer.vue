@@ -2,7 +2,7 @@
   <div class="h-full flex flex-col">
     <!-- Header -->
     <div class="p-3 border-b border-gray-200">
-      <h3 class="text-sm font-medium text-gray-700">File Explorer</h3>
+      <h3 class="text-sm font-medium text-gray-700">{{ $t('tabs.files') }}</h3>
 
       <!-- Library Selection -->
       <div class="mt-2 flex space-x-1">
@@ -41,7 +41,7 @@
     <!-- File Tree -->
     <div class="flex-1 overflow-y-auto p-2">
       <div v-if="loading" class="text-center py-4 text-gray-500">
-        Loading...
+        {{ $t('common.loading') }}
       </div>
       <div v-else-if="error" class="text-center py-4 text-red-500">
         {{ error }}
@@ -68,7 +68,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { ChevronUp, Folder, FileText } from 'lucide-vue-next'
+import { useI18n } from '@/composables/useI18n'
 import type { FileItem } from '@/types'
+
+const { t } = useI18n()
 
 interface Props {
   currentDirectory: string
@@ -113,7 +116,7 @@ const loadDirectory = async (): Promise<void> => {
   // Don't try to load if currentDirectory is empty
   if (!props.currentDirectory) {
     loading.value = false
-    error.value = 'No directory specified'
+    error.value = t('common.noDirectorySpecified')
     return
   }
 
@@ -142,8 +145,8 @@ const loadDirectory = async (): Promise<void> => {
 
     fileItems.value = items
   } catch (err) {
-    error.value = `Directory not found: ${props.currentDirectory}`
-    console.error('Error loading directory:', err)
+    error.value = `${t('common.directoryNotFound')} ${props.currentDirectory}`
+    console.error(t('errors.loadingFile'), err)
     fileItems.value = []
   } finally {
     loading.value = false

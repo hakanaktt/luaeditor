@@ -6,7 +6,7 @@
       class="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
     >
       <FileText :size="16" />
-      <span>New</span>
+      <span>{{ $t('toolbar.new') }}</span>
     </button>
     
     <button 
@@ -14,7 +14,7 @@
       class="flex items-center space-x-1 px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
     >
       <FolderOpen :size="16" />
-      <span>Open</span>
+      <span>{{ $t('toolbar.open') }}</span>
     </button>
     
     <button 
@@ -22,7 +22,7 @@
       class="flex items-center space-x-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
     >
       <Save :size="16" />
-      <span>Save</span>
+      <span>{{ $t('toolbar.save') }}</span>
     </button>
     
     <button
@@ -30,7 +30,7 @@
       class="flex items-center space-x-1 px-3 py-1.5 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
     >
       <Save :size="16" />
-      <span>Save As</span>
+      <span>{{ $t('toolbar.saveAs') }}</span>
     </button>
     
     <!-- Separator -->
@@ -42,12 +42,12 @@
       class="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-700 rounded hover:bg-gray-100 transition-colors"
     >
       <Settings :size="16" />
-      <span>Settings</span>
+      <span>{{ $t('toolbar.settings') }}</span>
     </button>
     
     <!-- Title -->
     <div class="flex-1 text-center">
-      <h1 class="text-lg font-semibold text-gray-800">Lua Macro Editor</h1>
+      <h1 class="text-lg font-semibold text-gray-800">{{ $t('app.title') }}</h1>
     </div>
     
     <!-- Help -->
@@ -56,7 +56,7 @@
       class="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-700 rounded hover:bg-gray-100 transition-colors"
     >
       <HelpCircle :size="16" />
-      <span>Help</span>
+      <span>{{ $t('toolbar.help') }}</span>
     </button>
   </div>
 </template>

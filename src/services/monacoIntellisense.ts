@@ -315,8 +315,8 @@ export class MonacoIntelliSenseService {
     if (!position) return
 
     // Create hover widget content
-    const signature = functionService.getFunctionSignature(functionName)
-    const documentation = functionService.getQuickHelp(functionName)
+    // const signature = functionService.getFunctionSignature(functionName)
+    // const documentation = functionService.getQuickHelp(functionName)
 
     // Show hover widget
     this.editor.trigger('keyboard', 'editor.action.showHover', {})

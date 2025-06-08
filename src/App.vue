@@ -21,14 +21,14 @@
                        activeTab === 'files' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700']"
               @click="activeTab = 'files'"
             >
-              Files
+              {{ $t('tabs.files') }}
             </button>
             <button
               :class="['flex-1 px-3 py-2 text-sm font-medium',
                        activeTab === 'functions' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700']"
               @click="activeTab = 'functions'"
             >
-              Functions
+              {{ $t('tabs.functions') }}
             </button>
           </div>
 
@@ -61,8 +61,8 @@
         />
         <div v-else class="flex-1 flex items-center justify-center text-gray-500">
           <div class="text-center">
-            <h2 class="text-xl mb-2">Welcome to Lua Macro Editor</h2>
-            <p>Open a file to start editing or browse AdekoLib functions</p>
+            <h2 class="text-xl mb-2">{{ $t('app.welcome') }}</h2>
+            <p>{{ $t('app.welcomeMessage') }}</p>
           </div>
         </div>
       </div>
@@ -79,10 +79,10 @@
     <!-- Status Bar -->
     <div class="h-6 bg-blue-600 text-white text-xs flex items-center px-2">
       <span v-if="currentFile">{{ currentFile }}</span>
-      <span v-else>No file open</span>
+      <span v-else>{{ $t('app.noFileOpen') }}</span>
       <div class="ml-auto">
-        <span v-if="isModified" class="mr-2">●</span>
-        <span>Lua Macro Editor</span>
+        <span v-if="isModified" class="mr-2">{{ $t('status.modified') }}</span>
+        <span>{{ $t('status.luaMacroEditor') }}</span>
       </div>
     </div>
   </div>
@@ -97,7 +97,10 @@ import FileExplorer from './components/FileExplorer.vue'
 import Editor from './components/Editor.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import FunctionBrowser from './components/FunctionBrowser.vue'
+import { useI18n } from '@/composables/useI18n'
 import type { AppSettings } from './types'
+
+const { t, changeLanguage } = useI18n()
 
 const currentDirectory = ref<string>('')
 const currentFile = ref<string | null>(null)
@@ -107,13 +110,14 @@ const showSettingsModal = ref<boolean>(false)
 const activeTab = ref<'files' | 'functions'>('files')
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const appSettings = ref<AppSettings>({
-  model_library_path: './LIBRARY/modelLibrary'
+  model_library_path: './LIBRARY/modelLibrary',
+  language: 'en'
 })
 const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
 
 const handleNewFile = (): void => {
   currentFile.value = null
-  currentFileContent.value = '-- New Lua file\n-- Add your Adeko macro code here\n\n'
+  currentFileContent.value = t('files.newFileComment')
   isModified.value = true
 }
 
@@ -122,7 +126,7 @@ const handleOpenFile = async (): Promise<void> => {
     const selected = await open({
       multiple: false,
       filters: [{
-        name: 'Lua Files',
+        name: t('files.luaFiles'),
         extensions: ['lua']
       }]
     })
@@ -134,7 +138,7 @@ const handleOpenFile = async (): Promise<void> => {
       isModified.value = false
     }
   } catch (error) {
-    console.error('Error opening file:', error)
+    console.error(t('errors.openingFile'), error)
   }
 }
 
@@ -151,7 +155,7 @@ const handleSaveFile = async (): Promise<void> => {
     })
     isModified.value = false
   } catch (error) {
-    console.error('Error saving file:', error)
+    console.error(t('errors.savingFile'), error)
   }
 }
 
@@ -159,7 +163,7 @@ const handleSaveAs = async (): Promise<void> => {
   try {
     const filePath = await save({
       filters: [{
-        name: 'Lua Files',
+        name: t('files.luaFiles'),
         extensions: ['lua']
       }]
     })
@@ -173,7 +177,7 @@ const handleSaveAs = async (): Promise<void> => {
       isModified.value = false
     }
   } catch (error) {
-    console.error('Error saving file:', error)
+    console.error(t('errors.savingFile'), error)
   }
 }
 
@@ -184,7 +188,7 @@ const handleFileSelected = async (filePath: string): Promise<void> => {
     currentFileContent.value = content
     isModified.value = false
   } catch (error) {
-    console.error('Error loading file:', error)
+    console.error(t('errors.loadingFile'), error)
   }
 }
 
@@ -219,7 +223,7 @@ const handleSettingsUpdated = async (newSettings: AppSettings): Promise<void> =>
       // Update current directory to lua library path
       currentDirectory.value = calculatedLuaPath
     } catch (error) {
-      console.error('Error calculating lua library path:', error)
+      console.error(t('errors.calculatingLuaPath'), error)
     }
   }
 }
@@ -228,6 +232,11 @@ const loadSettings = async (): Promise<void> => {
   try {
     const settings = await invoke<AppSettings>('load_settings')
     appSettings.value = settings
+
+    // Apply language setting
+    if (settings.language) {
+      changeLanguage(settings.language)
+    }
 
     // Calculate lua library path from model library path
     if (settings.model_library_path) {
@@ -241,12 +250,12 @@ const loadSettings = async (): Promise<void> => {
         // Verify the directory exists
         const dirExists = await invoke<boolean>('is_directory', { path: calculatedLuaPath })
         if (!dirExists) {
-          console.warn(`Lua library directory does not exist: ${calculatedLuaPath}`)
+          console.warn(`${t('status.directoryNotExist')} ${calculatedLuaPath}`)
           currentDirectory.value = './LIBRARY/luaLibrary'
           luaLibraryPath.value = './LIBRARY/luaLibrary'
         }
       } catch (error) {
-        console.error('Error calculating lua library path:', error)
+        console.error(t('errors.calculatingLuaPath'), error)
         currentDirectory.value = './LIBRARY/luaLibrary'
         luaLibraryPath.value = './LIBRARY/luaLibrary'
       }
@@ -255,7 +264,7 @@ const loadSettings = async (): Promise<void> => {
       luaLibraryPath.value = './LIBRARY/luaLibrary'
     }
   } catch (error) {
-    console.error('Error loading settings:', error)
+    console.error(t('errors.loadingSettings'), error)
     // Use default directory if settings can't be loaded
     currentDirectory.value = './LIBRARY/luaLibrary'
     luaLibraryPath.value = './LIBRARY/luaLibrary'
@@ -263,7 +272,7 @@ const loadSettings = async (): Promise<void> => {
 }
 
 onMounted(async () => {
-  console.log('Lua Macro Editor initialized')
+  console.log(t('status.initialized'))
   await loadSettings()
 })
 </script>
