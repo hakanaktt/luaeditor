@@ -1,4 +1,5 @@
 import { AdekoFunction, FunctionCategory } from '../types'
+import { allAdekoFunctions } from './adekoFunctionsComplete'
 
 // Function categories for organization
 export const functionCategories: FunctionCategory[] = [
@@ -501,64 +502,292 @@ export const functionCategories: FunctionCategory[] = [
     complexity: 'basic',
     usage: 'Use to specify cutting depth or material thickness for operations',
     seeAlso: ['setLayer', 'groove']
+  },
+  // Continue with more functions...
+  {
+    name: 'unpack',
+    description: 'Alternative to table.unpack for larger tables. Recursively unpacks table elements.',
+    parameters: [
+      { name: 't', type: 'table', description: 'Table to unpack' },
+      { name: 'i', type: 'number', description: 'Starting index (optional)', optional: true, defaultValue: 1 }
+    ],
+    returnType: 'multiple',
+    returnDescription: 'All table elements as separate return values',
+    example: 'local a, b, c = ADekoLib.unpack({1, 2, 3})',
+    category: 'Utilities',
+    subcategory: 'Data Processing',
+    tags: ['unpack', 'table', 'utility'],
+    complexity: 'basic',
+    usage: 'Use when table.unpack fails with large tables or when you need custom unpacking',
+    seeAlso: ['deepcopy', 'joinPolylines']
+  },
+  {
+    name: 'removeBackgroundAtTop',
+    description: 'Removes background from a polyline based on Z-threshold. Useful for image scan processing.',
+    parameters: [
+      { name: 'polyline', type: 'table', description: 'Input polyline with Z-coordinates' },
+      { name: 'threshold', type: 'number', description: 'Z-threshold for background removal' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Filtered polyline with background removed',
+    example: 'local filtered = ADekoLib.removeBackgroundAtTop(scanData, 5)',
+    category: 'Polyline Operations',
+    subcategory: 'Modification',
+    tags: ['filter', 'background', 'image', 'scan'],
+    complexity: 'advanced',
+    usage: 'Use for processing scanned image data or removing noise from 3D polylines',
+    seeAlso: ['reducePolyline', 'scaleDepth']
+  },
+  {
+    name: 'reducePolyline',
+    description: 'Merges same-direction segments to reduce polyline complexity without detail loss.',
+    parameters: [
+      { name: 'polyline', type: 'table', description: 'Input polyline to reduce' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Simplified polyline with fewer points',
+    example: 'local simplified = ADekoLib.reducePolyline(complexPath)',
+    category: 'Polyline Operations',
+    subcategory: 'Modification',
+    tags: ['simplify', 'optimize', 'reduce'],
+    complexity: 'intermediate',
+    usage: 'Use to optimize polylines for faster processing or smaller file sizes',
+    seeAlso: ['removeBackgroundAtTop', 'areParallell']
+  },
+  {
+    name: 'areParallell',
+    description: 'Tests if three points are collinear (on the same line). Uses distance comparison.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'First point {x, y, z}' },
+      { name: 'p2', type: 'table', description: 'Second point {x, y, z}' },
+      { name: 'p3', type: 'table', description: 'Third point {x, y, z}' }
+    ],
+    returnType: 'boolean',
+    returnDescription: 'True if points are collinear, false otherwise',
+    example: 'local isCollinear = ADekoLib.areParallell({0,0}, {5,5}, {10,10})',
+    category: 'Analysis & Testing',
+    subcategory: 'Geometric Tests',
+    tags: ['collinear', 'parallel', 'geometry'],
+    complexity: 'intermediate',
+    usage: 'Use to detect straight line segments or validate geometric relationships',
+    seeAlso: ['distance3D', 'areRoughlyEqual']
+  },
+  {
+    name: 'scaleDepth',
+    description: 'Scales Z-coordinates of points to fit within specified depth range.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points with Z-coordinates' },
+      { name: 'zMin', type: 'number', description: 'Minimum Z value for output' },
+      { name: 'zMax', type: 'number', description: 'Maximum Z value for output' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Points with scaled Z-coordinates',
+    example: 'local scaled = ADekoLib.scaleDepth(points, -10, 0)',
+    category: 'Point & Vector Operations',
+    subcategory: 'Point Operations',
+    tags: ['scale', 'depth', 'normalize'],
+    complexity: 'intermediate',
+    usage: 'Use to normalize depth values for consistent machining operations',
+    seeAlso: ['scaleHorizontal', 'scaleVertical']
+  },
+  {
+    name: 'scaleVertical',
+    description: 'Scales Y-coordinates of points to fit within specified vertical range.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points to scale' },
+      { name: 'yMin', type: 'number', description: 'Minimum Y value for output' },
+      { name: 'yMax', type: 'number', description: 'Maximum Y value for output' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Points with scaled Y-coordinates',
+    example: 'local scaled = ADekoLib.scaleVertical(points, 0, 100)',
+    category: 'Point & Vector Operations',
+    subcategory: 'Point Operations',
+    tags: ['scale', 'vertical', 'normalize'],
+    complexity: 'intermediate',
+    usage: 'Use to fit shapes within specific height constraints',
+    seeAlso: ['scaleHorizontal', 'scaleDepth']
+  },
+  {
+    name: 'scaleHorizontal',
+    description: 'Scales X-coordinates of points to fit within specified horizontal range.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points to scale' },
+      { name: 'xMin', type: 'number', description: 'Minimum X value for output' },
+      { name: 'xMax', type: 'number', description: 'Maximum X value for output' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Points with scaled X-coordinates',
+    example: 'local scaled = ADekoLib.scaleHorizontal(points, 0, 200)',
+    category: 'Point & Vector Operations',
+    subcategory: 'Point Operations',
+    tags: ['scale', 'horizontal', 'normalize'],
+    complexity: 'intermediate',
+    usage: 'Use to fit shapes within specific width constraints',
+    seeAlso: ['scaleVertical', 'scaleDepth']
+  },
+  {
+    name: 'joinPolylines',
+    description: 'Joins two polylines into a single continuous polyline.',
+    parameters: [
+      { name: 'poly1', type: 'table', description: 'First polyline' },
+      { name: 'poly2', type: 'table', description: 'Second polyline to append' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Combined polyline',
+    example: 'local combined = ADekoLib.joinPolylines(path1, path2)',
+    category: 'Polyline Operations',
+    subcategory: 'Creation',
+    tags: ['join', 'combine', 'polyline'],
+    complexity: 'basic',
+    usage: 'Use to create continuous paths from separate polyline segments',
+    seeAlso: ['polyline', 'polylineimp']
+  },
+  {
+    name: 'circularArc',
+    description: 'Creates a polygonal approximation of a circular arc with specified parameters.',
+    parameters: [
+      { name: 'centerPoint', type: 'table', description: 'Center point of the arc {x, y}' },
+      { name: 'diameter', type: 'number', description: 'Diameter of the circle' },
+      { name: 'noOfSegments', type: 'number', description: 'Number of line segments to approximate arc' },
+      { name: 'startAngle', type: 'number', description: 'Start angle in degrees' },
+      { name: 'endAngle', type: 'number', description: 'End angle in degrees' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Array of points representing the arc',
+    example: 'local arc = ADekoLib.circularArc({50, 50}, 40, 16, 0, 90)',
+    category: 'Shape Generation',
+    subcategory: 'Advanced Shapes',
+    tags: ['arc', 'circle', 'curve'],
+    complexity: 'intermediate',
+    usage: 'Use to create smooth curved paths or decorative arcs',
+    seeAlso: ['ellipticArc', 'circle']
   }
 ]
 
-// Start of function definitions - Basic Geometric Transformations
-export const adekoFunctions: AdekoFunction[] = [
+/**
+ * Comprehensive AdekoLib Function Catalog
+ *
+ * This catalog contains detailed documentation for all AdekoLib functions,
+ * organized by category and complexity level. Each function includes:
+ *
+ * - Complete parameter documentation with types and descriptions
+ * - Return value information
+ * - Working code examples
+ * - Usage guidelines and best practices
+ * - Related function recommendations
+ * - Complexity level indicators
+ * - Searchable tags for easy discovery
+ *
+ * Categories:
+ * - Geometric Transformations: rotate, translate, mirror, etc.
+ * - Point & Vector Operations: distance, angle, polar, etc.
+ * - Shape Generation: circle, rectangle, ellipse, etc.
+ * - Machining Operations: groove, hole, pocket, etc.
+ * - Polyline Operations: polyline, offset, join, etc.
+ * - Analysis & Testing: intersection, collision, validation
+ * - Data Management: parts, layers, faces, nodes
+ * - Utilities: copy, validation, conversion, etc.
+ */
+
+// Export the complete function catalog
+export const adekoFunctions: AdekoFunction[] = allAdekoFunctions
+
+// Legacy export for backward compatibility
+export const basicAdekoFunctions: AdekoFunction[] = [
   {
     name: 'rotate',
-    description: 'Rotates a polygon around a reference point by the specified angle',
+    description: 'Rotates a polygon around a reference point by the specified angle. Supports both clockwise and counter-clockwise rotation. All points in the polygon are rotated by the same angle around the reference point, maintaining the shape\'s proportions and relative positions.',
     parameters: [
-      { name: 'polygon', type: 'table', description: 'Array of points representing the polygon' },
-      { name: 'reference', type: 'table', description: 'Reference point {x, y} for rotation center' },
-      { name: 'theta', type: 'number', description: 'Rotation angle in degrees' }
+      {
+        name: 'polygon',
+        type: 'table',
+        description: 'Array of points representing the polygon. Each point should be in format {x, y} or {x, y, z, bulge}. The polygon can be open or closed.'
+      },
+      {
+        name: 'reference',
+        type: 'table',
+        description: 'Reference point {x, y} that serves as the center of rotation. This point remains stationary while all polygon points rotate around it.'
+      },
+      {
+        name: 'theta',
+        type: 'number',
+        description: 'Rotation angle in degrees. Positive values rotate counter-clockwise, negative values rotate clockwise. Can be any real number.'
+      }
     ],
     returnType: 'table',
-    returnDescription: 'Rotated polygon as array of points',
-    example: 'local rotated = ADekoLib.rotate({{0,0}, {10,0}, {10,10}}, {5,5}, 45)',
+    returnDescription: 'New polygon with all points rotated around the reference point. Maintains the same structure as input polygon including any Z-coordinates and bulge values.',
+    example: 'local rotated = ADekoLib.rotate({{0,0}, {10,0}, {10,10}, {0,10}}, {5,5}, 45) -- Rotate square 45° around center',
     category: 'Geometric Transformations',
     subcategory: 'Basic Transformations',
-    tags: ['rotation', 'transform', 'polygon'],
+    tags: ['rotation', 'transform', 'polygon', 'geometry', 'orientation'],
     complexity: 'basic',
-    usage: 'Use to rotate shapes around a pivot point for positioning or orientation changes',
-    seeAlso: ['translate', 'mirror']
+    usage: 'Use to rotate shapes around a pivot point for positioning, orientation changes, or creating rotated patterns. Essential for aligning parts or creating angular arrangements.',
+    seeAlso: ['translate', 'mirror', 'angle']
   },
   {
     name: 'translate',
-    description: 'Translates a polygon by moving it in a specified direction and distance',
+    description: 'Translates (moves) a polygon by moving all points in a specified direction and distance. Unlike simple coordinate addition, this function uses polar coordinates to move the shape at a specific angle, making it ideal for directional movements and positioning.',
     parameters: [
-      { name: 'pointTable', type: 'table', description: 'Array of points to translate' },
-      { name: 'theta', type: 'number', description: 'Direction angle in degrees' },
-      { name: 'distance', type: 'number', description: 'Distance to move' }
+      {
+        name: 'pointTable',
+        type: 'table',
+        description: 'Array of points to translate. Each point should be in format {x, y} or {x, y, z, bulge}. All points are moved by the same vector.'
+      },
+      {
+        name: 'theta',
+        type: 'number',
+        description: 'Direction angle in degrees (0° = positive X-axis, 90° = positive Y-axis). Determines the direction of movement.'
+      },
+      {
+        name: 'distance',
+        type: 'number',
+        description: 'Distance to move in the specified direction. Positive values move in the theta direction, negative values move opposite.'
+      }
     ],
     returnType: 'table',
-    returnDescription: 'Translated polygon as array of points',
-    example: 'local moved = ADekoLib.translate(points, 90, 50) -- Move 50 units upward',
+    returnDescription: 'New polygon with all points moved by the specified distance and direction. Preserves all original point attributes including Z-coordinates and bulge values.',
+    example: 'local moved = ADekoLib.translate(points, 90, 50) -- Move 50 units upward (90° direction)',
     category: 'Geometric Transformations',
     subcategory: 'Basic Transformations',
-    tags: ['translation', 'move', 'polygon'],
+    tags: ['translation', 'move', 'polygon', 'positioning', 'direction'],
     complexity: 'basic',
-    usage: 'Use to move shapes to different positions while maintaining orientation',
-    seeAlso: ['rotate', 'moveWithDeltaVec']
+    usage: 'Use to move shapes to different positions while maintaining orientation. Perfect for positioning parts, creating offsets, or arranging multiple copies of a shape.',
+    seeAlso: ['rotate', 'moveWithDeltaVec', 'polar']
   },
   {
     name: 'mirror',
-    description: 'Mirrors a polygon over the specified axis',
+    description: 'Mirrors (reflects) a polygon over a specified axis or point. Creates a symmetric copy of the shape across the mirror line. Automatically handles bulge values for arcs, reversing their direction to maintain proper arc orientation after mirroring.',
     parameters: [
-      { name: 'pointTable', type: 'table', description: 'Array of points to mirror' },
-      { name: 'axis', type: 'string', description: 'Mirror axis: "x", "y", or "xy"' },
-      { name: 'X', type: 'number', description: 'X-coordinate of mirror line' },
-      { name: 'Y', type: 'number', description: 'Y-coordinate of mirror line' }
+      {
+        name: 'pointTable',
+        type: 'table',
+        description: 'Array of points to mirror. Each point should be in format {x, y} or {x, y, z, bulge}. All points are reflected across the specified axis.'
+      },
+      {
+        name: 'axis',
+        type: 'string',
+        description: 'Mirror axis type: "x" (vertical line), "y" (horizontal line), or "xy" (point reflection). Determines the type of mirroring operation.'
+      },
+      {
+        name: 'X',
+        type: 'number',
+        description: 'X-coordinate of the mirror line or point. For "x" axis: the X position of vertical mirror line. For "xy": the X coordinate of mirror point.'
+      },
+      {
+        name: 'Y',
+        type: 'number',
+        description: 'Y-coordinate of the mirror line or point. For "y" axis: the Y position of horizontal mirror line. For "xy": the Y coordinate of mirror point.'
+      }
     ],
     returnType: 'table',
-    returnDescription: 'Mirrored polygon as array of points',
+    returnDescription: 'New polygon with all points mirrored across the specified axis. Bulge values are automatically negated for proper arc direction. Preserves Z-coordinates.',
     example: 'local mirrored = ADekoLib.mirror(points, "x", 100, 0) -- Mirror over vertical line at x=100',
     category: 'Geometric Transformations',
     subcategory: 'Basic Transformations',
-    tags: ['mirror', 'reflection', 'symmetry'],
+    tags: ['mirror', 'reflection', 'symmetry', 'flip', 'axis'],
     complexity: 'basic',
-    usage: 'Use to create symmetric shapes or flip objects across an axis',
-    seeAlso: ['rotate', 'translate']
+    usage: 'Use to create symmetric shapes, flip objects across an axis, or generate left/right handed versions of parts. Essential for creating symmetric furniture components.',
+    seeAlso: ['rotate', 'translate', 'sortCW', 'sortCCW']
   }
 ]
