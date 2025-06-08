@@ -13,7 +13,8 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- File Explorer -->
       <div
-        class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0"
+        class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0 transition-all duration-75"
+        :class="{ 'select-none': isResizing }"
         :style="{ width: sidebarWidth + 'px' }"
       >
         <div class="h-full flex flex-col">
@@ -228,6 +229,8 @@ const handleInsertFunction = (functionCall: string): void => {
 // Sidebar resize methods
 const startResize = (event: MouseEvent): void => {
   isResizing.value = true
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
   document.addEventListener('mousemove', handleResize)
   document.addEventListener('mouseup', stopResize)
   event.preventDefault()
@@ -245,6 +248,8 @@ const handleResize = (event: MouseEvent): void => {
 const stopResize = (): void => {
   if (isResizing.value) {
     isResizing.value = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
     document.removeEventListener('mousemove', handleResize)
     document.removeEventListener('mouseup', stopResize)
 
@@ -346,6 +351,8 @@ onMounted(async () => {
 onUnmounted(() => {
   // Clean up event listeners if component is unmounted during resize
   if (isResizing.value) {
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
     document.removeEventListener('mousemove', handleResize)
     document.removeEventListener('mouseup', stopResize)
   }
