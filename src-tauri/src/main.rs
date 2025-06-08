@@ -5,6 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use configparser::ini::Ini;
+use encoding_rs::{UTF_8, WINDOWS_1252, WINDOWS_1254, ISO_8859_2};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AppSettings {
@@ -61,7 +62,34 @@ fn read_file(path: String) -> Result<String, String> {
         PathBuf::from(&path)
     };
 
-    fs::read_to_string(&resolved_path).map_err(|e| e.to_string())
+    // First try to read as UTF-8
+    match fs::read_to_string(&resolved_path) {
+        Ok(content) => Ok(content),
+        Err(_) => {
+            // If UTF-8 fails, read as bytes and try to detect encoding
+            let bytes = fs::read(&resolved_path)
+                .map_err(|e| format!("Failed to read file as bytes: {}", e))?;
+
+            // Try different encodings commonly used for Turkish text
+            let encodings_to_try = [
+                UTF_8,           // UTF-8 (already tried above, but let's be thorough)
+                WINDOWS_1254,    // Windows-1254 (Turkish)
+                WINDOWS_1252,    // Windows-1252 (Western European)
+                ISO_8859_2,      // ISO-8859-2 (Central European, closest available)
+            ];
+
+            for encoding in &encodings_to_try {
+                let (decoded, _, had_errors) = encoding.decode(&bytes);
+                if !had_errors {
+                    return Ok(decoded.into_owned());
+                }
+            }
+
+            // If all encodings fail, try with replacement characters
+            let (decoded, _, _) = UTF_8.decode(&bytes);
+            Ok(decoded.into_owned())
+        }
+    }
 }
 
 #[tauri::command]
