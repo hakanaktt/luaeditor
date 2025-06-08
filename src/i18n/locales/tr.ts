@@ -36,6 +36,8 @@ export default {
     notAvailable: 'Mevcut değil',
     autoDetectionNote: 'Lua kütüphanesi, model kütüphanesinin kardeş klasörü olarak otomatik olarak algılanacaktır.',
     language: 'Dil',
+    sidebarWidth: 'Kenar Çubuğu Genişliği',
+    sidebarWidthNote: 'Kenar çubuğu panelinin genişliğini ayarlayın (200-600px). Ayrıca kenar çubuğu kenarını sürükleyerek yeniden boyutlandırabilirsiniz.',
     cancel: 'İptal',
     save: 'Kaydet',
     saving: 'Kaydediliyor...',

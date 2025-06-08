@@ -45,6 +45,7 @@ export interface MacroTemplate {
 export interface AppSettings {
   model_library_path?: string
   language?: string
+  sidebar_width?: number
 }
 
 // Function category structure for organizing functions

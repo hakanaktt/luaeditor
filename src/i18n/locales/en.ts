@@ -36,6 +36,8 @@ export default {
     notAvailable: 'Not available',
     autoDetectionNote: 'The Lua library will be automatically detected as a sibling folder to the model library.',
     language: 'Language',
+    sidebarWidth: 'Sidebar Width',
+    sidebarWidthNote: 'Adjust the width of the sidebar panel (200-600px). You can also drag the sidebar edge to resize.',
     cancel: 'Cancel',
     save: 'Save',
     saving: 'Saving...',

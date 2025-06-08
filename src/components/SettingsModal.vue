@@ -58,6 +58,27 @@
           </select>
         </div>
 
+        <!-- Sidebar Width -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            {{ $t('settings.sidebarWidth') }}
+          </label>
+          <div class="flex items-center space-x-3">
+            <input
+              v-model.number="localSettings.sidebar_width"
+              type="range"
+              min="200"
+              max="600"
+              step="10"
+              class="flex-1"
+            />
+            <span class="text-sm text-gray-600 w-16">{{ localSettings.sidebar_width || 320 }}px</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            {{ $t('settings.sidebarWidthNote') }}
+          </p>
+        </div>
+
         <!-- Current Paths Info -->
         <div class="bg-gray-50 p-3 rounded-md">
           <h4 class="text-sm font-medium text-gray-700 mb-2">{{ $t('settings.currentPaths') }}</h4>
@@ -176,7 +197,10 @@ const closeModal = (): void => {
 
 // Watch for settings changes from parent
 watch(() => props.settings, (newSettings) => {
-  localSettings.value = { ...newSettings }
+  localSettings.value = {
+    ...newSettings,
+    sidebar_width: newSettings.sidebar_width || 320
+  }
   if (newSettings.language) {
     selectedLanguage.value = newSettings.language
   }

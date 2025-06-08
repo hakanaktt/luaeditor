@@ -12,7 +12,10 @@
     <!-- Main Content Area -->
     <div class="flex flex-1 overflow-hidden">
       <!-- File Explorer -->
-      <div class="w-64 bg-gray-50 border-r border-gray-200">
+      <div
+        class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0"
+        :style="{ width: sidebarWidth + 'px' }"
+      >
         <div class="h-full flex flex-col">
           <!-- Tab Navigation -->
           <div class="flex border-b border-gray-200">
@@ -48,6 +51,12 @@
             />
           </div>
         </div>
+
+        <!-- Resize Handle -->
+        <div
+          class="sidebar-resize-handle"
+          @mousedown="startResize"
+        ></div>
       </div>
 
       <!-- Editor Area -->
@@ -89,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
 import Toolbar from './components/Toolbar.vue'
@@ -111,9 +120,16 @@ const activeTab = ref<'files' | 'functions'>('files')
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary',
-  language: 'en'
+  language: 'en',
+  sidebar_width: 320
 })
 const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
+
+// Sidebar resize functionality
+const sidebarWidth = ref<number>(320)
+const isResizing = ref<boolean>(false)
+const minSidebarWidth = 200
+const maxSidebarWidth = 600
 
 const handleNewFile = (): void => {
   currentFile.value = null
@@ -209,8 +225,54 @@ const handleInsertFunction = (functionCall: string): void => {
   }
 }
 
+// Sidebar resize methods
+const startResize = (event: MouseEvent): void => {
+  isResizing.value = true
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+  event.preventDefault()
+}
+
+const handleResize = (event: MouseEvent): void => {
+  if (!isResizing.value) return
+
+  const newWidth = event.clientX
+  if (newWidth >= minSidebarWidth && newWidth <= maxSidebarWidth) {
+    sidebarWidth.value = newWidth
+  }
+}
+
+const stopResize = (): void => {
+  if (isResizing.value) {
+    isResizing.value = false
+    document.removeEventListener('mousemove', handleResize)
+    document.removeEventListener('mouseup', stopResize)
+
+    // Save the new sidebar width to settings
+    saveSidebarWidth()
+  }
+}
+
+const saveSidebarWidth = async (): Promise<void> => {
+  try {
+    const updatedSettings = {
+      ...appSettings.value,
+      sidebar_width: sidebarWidth.value
+    }
+    await invoke('save_settings', { settings: updatedSettings })
+    appSettings.value = updatedSettings
+  } catch (error) {
+    console.error('Error saving sidebar width:', error)
+  }
+}
+
 const handleSettingsUpdated = async (newSettings: AppSettings): Promise<void> => {
   appSettings.value = { ...newSettings }
+
+  // Update sidebar width if provided
+  if (newSettings.sidebar_width) {
+    sidebarWidth.value = newSettings.sidebar_width
+  }
 
   // Calculate lua library path from model library path
   if (newSettings.model_library_path) {
@@ -232,6 +294,11 @@ const loadSettings = async (): Promise<void> => {
   try {
     const settings = await invoke<AppSettings>('load_settings')
     appSettings.value = settings
+
+    // Apply sidebar width setting
+    if (settings.sidebar_width) {
+      sidebarWidth.value = settings.sidebar_width
+    }
 
     // Apply language setting
     if (settings.language) {
@@ -274,5 +341,13 @@ const loadSettings = async (): Promise<void> => {
 onMounted(async () => {
   console.log(t('status.initialized'))
   await loadSettings()
+})
+
+onUnmounted(() => {
+  // Clean up event listeners if component is unmounted during resize
+  if (isResizing.value) {
+    document.removeEventListener('mousemove', handleResize)
+    document.removeEventListener('mouseup', stopResize)
+  }
 })
 </script>
