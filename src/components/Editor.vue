@@ -201,9 +201,94 @@ const insertText = (text: string): void => {
   editor.setPosition(newPosition)
 }
 
-// Expose the insertText method
+// Editor action methods
+const undo = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'undo', null)
+  }
+}
+
+const redo = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'redo', null)
+  }
+}
+
+const cut = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.clipboardCutAction', null)
+  }
+}
+
+const copy = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.clipboardCopyAction', null)
+  }
+}
+
+const paste = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.clipboardPasteAction', null)
+  }
+}
+
+const selectAll = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.selectAll', null)
+  }
+}
+
+const showFindDialog = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'actions.find', null)
+  }
+}
+
+const showReplaceDialog = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.startFindReplaceAction', null)
+  }
+}
+
+const zoomIn = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.fontZoomIn', null)
+  }
+}
+
+const zoomOut = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.fontZoomOut', null)
+  }
+}
+
+const resetZoom = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.fontZoomReset', null)
+  }
+}
+
+const formatCode = (): void => {
+  if (editor) {
+    editor.trigger('keyboard', 'editor.action.formatDocument', null)
+  }
+}
+
+// Expose all methods
 defineExpose({
-  insertText
+  insertText,
+  undo,
+  redo,
+  cut,
+  copy,
+  paste,
+  selectAll,
+  showFindDialog,
+  showReplaceDialog,
+  zoomIn,
+  zoomOut,
+  resetZoom,
+  formatCode
 })
 
 // Watch for file content changes

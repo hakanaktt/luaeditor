@@ -1,12 +1,32 @@
 <template>
   <div class="h-screen flex flex-col bg-gray-100">
-    <!-- Toolbar -->
-    <Toolbar
+    <!-- Menu Bar -->
+    <MenuBar
+      :has-open-file="!!currentFile"
       @new-file="handleNewFile"
       @open-file="handleOpenFile"
       @save-file="handleSaveFile"
       @save-as="handleSaveAs"
+      @undo="handleUndo"
+      @redo="handleRedo"
+      @cut="handleCut"
+      @copy="handleCopy"
+      @paste="handlePaste"
+      @select-all="handleSelectAll"
+      @find="handleFind"
+      @replace="handleReplace"
+      @toggle-sidebar="handleToggleSidebar"
+      @toggle-function-browser="handleToggleFunctionBrowser"
+      @zoom-in="handleZoomIn"
+      @zoom-out="handleZoomOut"
+      @reset-zoom="handleResetZoom"
       @toggle-settings="showSettingsModal = true"
+      @show-function-browser="handleShowFunctionBrowser"
+      @validate-lua="handleValidateLua"
+      @format-code="handleFormatCode"
+      @show-documentation="handleShowDocumentation"
+      @show-keyboard-shortcuts="handleShowKeyboardShortcuts"
+      @show-about="handleShowAbout"
     />
     
     <!-- Main Content Area -->
@@ -101,7 +121,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
-import Toolbar from './components/Toolbar.vue'
+import MenuBar from './components/MenuBar.vue'
 import FileExplorer from './components/FileExplorer.vue'
 import Editor from './components/Editor.vue'
 import SettingsModal from './components/SettingsModal.vue'
@@ -127,6 +147,7 @@ const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
 
 // Sidebar resize functionality
 const sidebarWidth = ref<number>(320)
+const previousSidebarWidth = ref<number>(320)
 const isResizing = ref<boolean>(false)
 const minSidebarWidth = 200
 const maxSidebarWidth = 600
@@ -223,6 +244,117 @@ const handleInsertFunction = (functionCall: string): void => {
     // Switch to files tab to see the editor
     activeTab.value = 'files'
   }
+}
+
+// Menu action handlers
+const handleUndo = (): void => {
+  if (editorRef.value) {
+    editorRef.value.undo()
+  }
+}
+
+const handleRedo = (): void => {
+  if (editorRef.value) {
+    editorRef.value.redo()
+  }
+}
+
+const handleCut = (): void => {
+  if (editorRef.value) {
+    editorRef.value.cut()
+  }
+}
+
+const handleCopy = (): void => {
+  if (editorRef.value) {
+    editorRef.value.copy()
+  }
+}
+
+const handlePaste = (): void => {
+  if (editorRef.value) {
+    editorRef.value.paste()
+  }
+}
+
+const handleSelectAll = (): void => {
+  if (editorRef.value) {
+    editorRef.value.selectAll()
+  }
+}
+
+const handleFind = (): void => {
+  if (editorRef.value) {
+    editorRef.value.showFindDialog()
+  }
+}
+
+const handleReplace = (): void => {
+  if (editorRef.value) {
+    editorRef.value.showReplaceDialog()
+  }
+}
+
+const handleToggleSidebar = (): void => {
+  // Toggle sidebar visibility by setting width to 0 or restoring it
+  if (sidebarWidth.value > 0) {
+    previousSidebarWidth.value = sidebarWidth.value
+    sidebarWidth.value = 0
+  } else {
+    sidebarWidth.value = previousSidebarWidth.value || 320
+  }
+}
+
+const handleToggleFunctionBrowser = (): void => {
+  activeTab.value = activeTab.value === 'functions' ? 'files' : 'functions'
+}
+
+const handleZoomIn = (): void => {
+  if (editorRef.value) {
+    editorRef.value.zoomIn()
+  }
+}
+
+const handleZoomOut = (): void => {
+  if (editorRef.value) {
+    editorRef.value.zoomOut()
+  }
+}
+
+const handleResetZoom = (): void => {
+  if (editorRef.value) {
+    editorRef.value.resetZoom()
+  }
+}
+
+const handleShowFunctionBrowser = (): void => {
+  activeTab.value = 'functions'
+}
+
+const handleValidateLua = (): void => {
+  // TODO: Implement Lua syntax validation
+  console.log('Validate Lua syntax')
+}
+
+const handleFormatCode = (): void => {
+  if (editorRef.value) {
+    editorRef.value.formatCode()
+  }
+}
+
+const handleShowDocumentation = (): void => {
+  // TODO: Implement documentation modal
+  console.log('Show documentation')
+}
+
+const handleShowKeyboardShortcuts = (): void => {
+  // TODO: Implement keyboard shortcuts modal
+  console.log('Show keyboard shortcuts')
+}
+
+const handleShowAbout = (): void => {
+  // TODO: Implement about modal
+  console.log('Show about')
 }
 
 // Sidebar resize methods

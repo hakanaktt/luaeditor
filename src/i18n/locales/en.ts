@@ -8,7 +8,68 @@ export default {
     noFileOpen: 'No file open'
   },
 
-  // Toolbar actions
+  // Menu bar
+  menu: {
+    file: 'File',
+    edit: 'Edit',
+    view: 'View',
+    tools: 'Tools',
+    help: 'Help'
+  },
+
+  // File menu
+  fileMenu: {
+    new: 'New',
+    open: 'Open',
+    save: 'Save',
+    saveAs: 'Save As',
+    recentFiles: 'Recent Files',
+    clearRecentFiles: 'Clear Recent Files',
+    exit: 'Exit'
+  },
+
+  // Edit menu
+  editMenu: {
+    undo: 'Undo',
+    redo: 'Redo',
+    cut: 'Cut',
+    copy: 'Copy',
+    paste: 'Paste',
+    selectAll: 'Select All',
+    find: 'Find',
+    replace: 'Replace',
+    findNext: 'Find Next',
+    findPrevious: 'Find Previous'
+  },
+
+  // View menu
+  viewMenu: {
+    toggleSidebar: 'Toggle Sidebar',
+    toggleFunctionBrowser: 'Toggle Function Browser',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out',
+    resetZoom: 'Reset Zoom',
+    fullscreen: 'Toggle Fullscreen'
+  },
+
+  // Tools menu
+  toolsMenu: {
+    settings: 'Settings',
+    functionBrowser: 'Function Browser',
+    validateLua: 'Validate Lua Syntax',
+    formatCode: 'Format Code',
+    insertFunction: 'Insert Function'
+  },
+
+  // Help menu
+  helpMenu: {
+    documentation: 'Documentation',
+    keyboardShortcuts: 'Keyboard Shortcuts',
+    about: 'About',
+    reportIssue: 'Report Issue'
+  },
+
+  // Toolbar actions (keeping for backward compatibility)
   toolbar: {
     new: 'New',
     open: 'Open',

@@ -8,7 +8,68 @@ export default {
     noFileOpen: 'Açık dosya yok'
   },
 
-  // Araç çubuğu eylemleri
+  // Menü çubuğu
+  menu: {
+    file: 'Dosya',
+    edit: 'Düzenle',
+    view: 'Görünüm',
+    tools: 'Araçlar',
+    help: 'Yardım'
+  },
+
+  // Dosya menüsü
+  fileMenu: {
+    new: 'Yeni',
+    open: 'Aç',
+    save: 'Kaydet',
+    saveAs: 'Farklı Kaydet',
+    recentFiles: 'Son Dosyalar',
+    clearRecentFiles: 'Son Dosyaları Temizle',
+    exit: 'Çıkış'
+  },
+
+  // Düzenle menüsü
+  editMenu: {
+    undo: 'Geri Al',
+    redo: 'Yinele',
+    cut: 'Kes',
+    copy: 'Kopyala',
+    paste: 'Yapıştır',
+    selectAll: 'Tümünü Seç',
+    find: 'Bul',
+    replace: 'Değiştir',
+    findNext: 'Sonrakini Bul',
+    findPrevious: 'Öncekini Bul'
+  },
+
+  // Görünüm menüsü
+  viewMenu: {
+    toggleSidebar: 'Kenar Çubuğunu Aç/Kapat',
+    toggleFunctionBrowser: 'Fonksiyon Tarayıcısını Aç/Kapat',
+    zoomIn: 'Yakınlaştır',
+    zoomOut: 'Uzaklaştır',
+    resetZoom: 'Yakınlaştırmayı Sıfırla',
+    fullscreen: 'Tam Ekranı Aç/Kapat'
+  },
+
+  // Araçlar menüsü
+  toolsMenu: {
+    settings: 'Ayarlar',
+    functionBrowser: 'Fonksiyon Tarayıcısı',
+    validateLua: 'Lua Sözdizimini Doğrula',
+    formatCode: 'Kodu Biçimlendir',
+    insertFunction: 'Fonksiyon Ekle'
+  },
+
+  // Yardım menüsü
+  helpMenu: {
+    documentation: 'Belgeler',
+    keyboardShortcuts: 'Klavye Kısayolları',
+    about: 'Hakkında',
+    reportIssue: 'Sorun Bildir'
+  },
+
+  // Araç çubuğu eylemleri (geriye dönük uyumluluk için)
   toolbar: {
     new: 'Yeni',
     open: 'Aç',
