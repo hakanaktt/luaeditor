@@ -55,52 +55,84 @@
     
     <!-- Main Content Area -->
     <div class="flex flex-1 overflow-hidden">
-      <!-- File Explorer -->
-      <div
-        class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0 transition-all duration-75"
-        :class="{ 'select-none': isResizing }"
-        :style="{ width: sidebarWidth + 'px' }"
-      >
-        <div class="h-full flex flex-col">
-          <!-- Tab Navigation -->
-          <div class="flex border-b border-gray-200">
+      <!-- Sidebar -->
+      <div class="flex">
+        <!-- Icon Bar -->
+        <div class="w-12 bg-gray-800 border-r border-gray-600 flex flex-col">
+          <!-- Navigation Icons -->
+          <div class="flex flex-col">
             <button
-              :class="['flex-1 px-3 py-2 text-sm font-medium',
-                       activeTab === 'files' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700']"
+              :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
+                       activeTab === 'files' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
               @click="activeTab = 'files'"
+              :title="$t('tabs.files')"
             >
-              {{ $t('tabs.files') }}
+              <FolderOpen :size="20" />
             </button>
             <button
-              :class="['flex-1 px-3 py-2 text-sm font-medium',
-                       activeTab === 'functions' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700']"
+              :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
+                       activeTab === 'functions' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
               @click="activeTab = 'functions'"
+              :title="$t('tabs.functions')"
             >
-              {{ $t('tabs.functions') }}
+              <Code :size="20" />
             </button>
-          </div>
-
-          <!-- Tab Content -->
-          <div class="flex-1 overflow-hidden">
-            <FileExplorer
-              v-show="activeTab === 'files'"
-              :current-directory="currentDirectory"
-              :model-library-path="appSettings.model_library_path"
-              @file-selected="handleFileSelected"
-              @directory-changed="handleDirectoryChanged"
-            />
-            <FunctionBrowser
-              v-show="activeTab === 'functions'"
-              :on-insert-function="handleInsertFunction"
-            />
+            <button
+              :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
+                       activeTab === 'visualization' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
+              @click="activeTab = 'visualization'"
+              :title="$t('tabs.visualization')"
+            >
+              <BarChart3 :size="20" />
+            </button>
           </div>
         </div>
 
-        <!-- Resize Handle -->
+        <!-- Content Panel -->
         <div
-          class="sidebar-resize-handle"
-          @mousedown="startResize"
-        ></div>
+          v-if="sidebarWidth > 48"
+          class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0 transition-all duration-75"
+          :class="{ 'select-none': isResizing }"
+          :style="{ width: (sidebarWidth - 48) + 'px' }"
+        >
+          <div class="h-full flex flex-col">
+            <!-- Panel Header -->
+            <div class="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-3">
+              <span class="text-sm font-medium text-gray-700">
+                {{ activeTab === 'files' ? $t('tabs.files') :
+                   activeTab === 'functions' ? $t('tabs.functions') :
+                   $t('tabs.visualization') }}
+              </span>
+            </div>
+
+            <!-- Panel Content -->
+            <div class="flex-1 overflow-hidden">
+              <FileExplorer
+                v-show="activeTab === 'files'"
+                :current-directory="currentDirectory"
+                :model-library-path="appSettings.model_library_path"
+                @file-selected="handleFileSelected"
+                @directory-changed="handleDirectoryChanged"
+              />
+              <FunctionBrowser
+                v-show="activeTab === 'functions'"
+                :on-insert-function="handleInsertFunction"
+              />
+              <VisualizationPanel
+                v-show="activeTab === 'visualization'"
+                ref="visualizationPanelRef"
+                :draw-commands="currentDrawCommands"
+                @clear-visualization="handleClearVisualization"
+              />
+            </div>
+          </div>
+
+          <!-- Resize Handle -->
+          <div
+            class="sidebar-resize-handle"
+            @mousedown="startResize"
+          ></div>
+        </div>
       </div>
 
       <!-- Editor Area -->
@@ -173,7 +205,9 @@ import SettingsModal from './components/SettingsModal.vue'
 import FunctionBrowser from './components/FunctionBrowser.vue'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal.vue'
 import DebugConsole from './components/DebugConsole.vue'
+import VisualizationPanel from './components/VisualizationPanel.vue'
 import NotificationSystem from './components/NotificationSystem.vue'
+import { FolderOpen, Code, BarChart3 } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useNotifications } from '@/composables/useNotifications'
@@ -191,9 +225,10 @@ const isModified = ref<boolean>(false)
 const showSettingsModal = ref<boolean>(false)
 const showKeyboardShortcutsModal = ref<boolean>(false)
 const showDebugConsole = ref<boolean>(false)
-const activeTab = ref<'files' | 'functions'>('files')
+const activeTab = ref<'files' | 'functions' | 'visualization'>('files')
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const debugConsoleRef = ref<InstanceType<typeof DebugConsole> | null>(null)
+const visualizationPanelRef = ref<InstanceType<typeof VisualizationPanel> | null>(null)
 const zoomLevel = ref<number>(100)
 const currentFileName = ref<string>('')
 const appSettings = ref<AppSettings>({
@@ -210,7 +245,7 @@ const currentDrawCommands = ref<DrawCommand[]>([])
 const sidebarWidth = ref<number>(320)
 const previousSidebarWidth = ref<number>(320)
 const isResizing = ref<boolean>(false)
-const minSidebarWidth = 200
+const minSidebarWidth = 48  // Just the icon bar
 const maxSidebarWidth = 600
 
 const handleNewFile = (): void => {
@@ -364,10 +399,10 @@ const handleReplace = (): void => {
 }
 
 const handleToggleSidebar = (): void => {
-  // Toggle sidebar visibility by setting width to 0 or restoring it
-  if (sidebarWidth.value > 0) {
+  // Toggle sidebar between icon-only and full width
+  if (sidebarWidth.value > 48) {
     previousSidebarWidth.value = sidebarWidth.value
-    sidebarWidth.value = 0
+    sidebarWidth.value = 48  // Show only icon bar
   } else {
     sidebarWidth.value = previousSidebarWidth.value || 320
   }
@@ -578,6 +613,13 @@ const handleClearDebugConsole = (): void => {
   currentDrawCommands.value = []
 }
 
+const handleClearVisualization = (): void => {
+  currentDrawCommands.value = []
+  if (debugConsoleRef.value) {
+    debugConsoleRef.value.clearConsole()
+  }
+}
+
 // Sidebar resize methods
 const startResize = (event: MouseEvent): void => {
   isResizing.value = true
@@ -592,8 +634,12 @@ const handleResize = (event: MouseEvent): void => {
   if (!isResizing.value) return
 
   const newWidth = event.clientX
-  if (newWidth >= minSidebarWidth && newWidth <= maxSidebarWidth) {
+  // Ensure minimum width for content panel (48px icon bar + 200px content)
+  const effectiveMinWidth = 248
+  if (newWidth >= effectiveMinWidth && newWidth <= maxSidebarWidth) {
     sidebarWidth.value = newWidth
+  } else if (newWidth < effectiveMinWidth && newWidth >= minSidebarWidth) {
+    sidebarWidth.value = 48  // Snap to icon-only mode
   }
 }
 

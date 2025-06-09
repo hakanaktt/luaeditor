@@ -84,7 +84,8 @@ export default {
   // Navigasyon sekmeleri
   tabs: {
     files: 'Dosyalar',
-    functions: 'Fonksiyonlar'
+    functions: 'Fonksiyonlar',
+    visualization: 'Görselleştirme'
   },
 
   // Ayarlar modalı
@@ -213,6 +214,17 @@ export default {
     resetView: 'Görünümü Sıfırla',
     zoomIn: 'Yakınlaştır',
     zoomOut: 'Uzaklaştır'
+  },
+
+  // Görselleştirme Paneli
+  visualization: {
+    title: 'Görselleştirme',
+    commands: 'komut',
+    clear: 'Görselleştirmeyi Temizle',
+    expand: 'Görselleştirmeyi Genişlet',
+    collapse: 'Görselleştirmeyi Daralt',
+    noData: 'Görselleştirme verisi yok',
+    runScriptHint: 'Kaplumbağa grafiklerini görmek için hata ayıklama modunda bir betik çalıştırın'
   },
 
   // Araç çubuğu

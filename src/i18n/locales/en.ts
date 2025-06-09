@@ -84,7 +84,8 @@ export default {
   // Navigation tabs
   tabs: {
     files: 'Files',
-    functions: 'Functions'
+    functions: 'Functions',
+    visualization: 'Visualization'
   },
 
   // Settings modal
@@ -213,6 +214,17 @@ export default {
     resetView: 'Reset View',
     zoomIn: 'Zoom In',
     zoomOut: 'Zoom Out'
+  },
+
+  // Visualization Panel
+  visualization: {
+    title: 'Visualization',
+    commands: 'commands',
+    clear: 'Clear Visualization',
+    expand: 'Expand Visualization',
+    collapse: 'Collapse Visualization',
+    noData: 'No visualization data',
+    runScriptHint: 'Run a script with debug mode to see turtle graphics'
   },
 
   // Toolbar
