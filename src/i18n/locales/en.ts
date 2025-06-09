@@ -204,7 +204,10 @@ export default {
     clearConsole: 'Clear Console',
     copyOutput: 'Copy Output',
     saveOutput: 'Save Output to File',
-    toggleTurtleGraphics: 'Toggle Turtle Graphics'
+    toggleTurtleGraphics: 'Toggle Turtle Graphics',
+    debugMode: 'ZeroBrane-style Debug Mode',
+    faceLayout: '6-Face Layout Active',
+    drawCommands: 'draw commands captured'
   },
 
   // Turtle Canvas

@@ -190,6 +190,9 @@ const drawCanvas = () => {
   // Draw grid
   drawGrid(ctx, canvas.width, canvas.height)
 
+  // Draw face layout guides (ZeroBrane-style)
+  drawFaceLayoutGuides(ctx)
+
   // Draw commands
   console.log('Drawing', props.drawCommands.length, 'commands')
   props.drawCommands.forEach(command => {
@@ -226,21 +229,77 @@ const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) 
     ctx.stroke()
   }
   
-  // Draw axes
-  ctx.strokeStyle = '#c0c0c0'
-  ctx.lineWidth = 1
-  
-  // X-axis
+  // Draw axes with different colors for better visibility
+  // X-axis (red)
+  ctx.strokeStyle = '#ff6b6b'
+  ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(centerX - halfWidth, 0)
   ctx.lineTo(centerX + halfWidth, 0)
   ctx.stroke()
-  
-  // Y-axis
+
+  // Y-axis (teal)
+  ctx.strokeStyle = '#4ecdc4'
+  ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(0, centerY - halfHeight)
   ctx.lineTo(0, centerY + halfHeight)
   ctx.stroke()
+
+  // Add axis labels if scale is appropriate
+  if (scale.value > 0.3) {
+    ctx.fillStyle = '#666'
+    ctx.font = `${Math.max(10, 12 / scale.value)}px Arial`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    // X-axis label
+    ctx.fillText('X', centerX + halfWidth - 20, -15)
+
+    // Y-axis label
+    ctx.save()
+    ctx.rotate(-Math.PI / 2)
+    ctx.fillText('Y', 15, -(centerY + halfHeight - 20))
+    ctx.restore()
+
+    // Origin marker
+    ctx.fillStyle = '#333'
+    ctx.beginPath()
+    ctx.arc(0, 0, 3, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.fillText('(0,0)', 10, -10)
+  }
+}
+
+const drawFaceLayoutGuides = (ctx: CanvasRenderingContext2D) => {
+  // Draw ZeroBrane-style face layout guides if we detect face layout commands
+  const hasTextCommands = props.drawCommands.some(cmd =>
+    cmd.command_type === 'text' &&
+    ['Left', 'Right', 'Top', 'Bottom', 'Front', 'Rear'].includes(cmd.text)
+  )
+
+  if (hasTextCommands) {
+    ctx.strokeStyle = '#ffd93d'
+    ctx.lineWidth = 1
+    ctx.setLineDash([5, 5])
+
+    // Draw face boundary indicators based on ADekoDebugMode.lua layout
+    // These are approximate positions based on the offset calculations
+    const faceRegions = [
+      { name: 'Left', x: 40, y: 20, width: 18, height: 700 },
+      { name: 'Rear', x: 40, y: 758, width: 500, height: 18 },
+      { name: 'Front', x: 598, y: 796, width: 18, height: 500 },
+      { name: 'Right', x: 540, y: 796, width: 18, height: 700 },
+      { name: 'Top', x: 40, y: 796, width: 500, height: 700 },
+      { name: 'Bottom', x: 638, y: 796, width: 500, height: 700 }
+    ]
+
+    faceRegions.forEach(face => {
+      ctx.strokeRect(face.x, -face.y - face.height, face.width, face.height)
+    })
+
+    ctx.setLineDash([]) // Reset line dash
+  }
 }
 
 const drawCommand = (ctx: CanvasRenderingContext2D, command: DrawCommand) => {

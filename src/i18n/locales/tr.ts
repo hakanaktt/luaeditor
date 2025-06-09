@@ -204,7 +204,10 @@ export default {
     clearConsole: 'Konsolu Temizle',
     copyOutput: 'Çıktıyı Kopyala',
     saveOutput: 'Çıktıyı Dosyaya Kaydet',
-    toggleTurtleGraphics: 'Kaplumbağa Grafiklerini Aç/Kapat'
+    toggleTurtleGraphics: 'Kaplumbağa Grafiklerini Aç/Kapat',
+    debugMode: 'ZeroBrane-tarzı Hata Ayıklama Modu',
+    faceLayout: '6-Yüz Düzeni Aktif',
+    drawCommands: 'çizim komutu yakalandı'
   },
 
   // Kaplumbağa Tuvali

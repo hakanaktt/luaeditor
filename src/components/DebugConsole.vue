@@ -9,8 +9,11 @@
           <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
           <span class="text-xs">{{ $t('debugConsole.running') }}</span>
         </div>
-        <div v-else-if="lastExecutionTime" class="text-xs text-gray-500">
-          {{ $t('debugConsole.executionTime', { time: lastExecutionTime }) }}
+        <div v-else-if="lastExecutionTime" class="flex items-center space-x-2 text-xs text-gray-500">
+          <span>{{ $t('debugConsole.executionTime', { time: lastExecutionTime }) }}</span>
+          <span v-if="drawCommands.length > 0" class="text-green-600">
+            🎨 {{ drawCommands.length }} draw commands
+          </span>
         </div>
       </div>
       <div class="flex items-center space-x-1">

@@ -2,6 +2,11 @@ use mlua::{Lua, Result as LuaResult, Table, Value};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
+// Bundle Lua libraries as static strings
+const ADEKO_LIB_LUA: &str = include_str!("../../LIBRARY/luaLibrary/ADekoLib.lua");
+const TURTLE_LUA: &str = include_str!("../../LIBRARY/luaLibrary/turtle.lua");
+const ADEKO_DEBUG_MODE_LUA: &str = include_str!("../../LIBRARY/luaLibrary/ADekoDebugMode.lua");
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DrawCommand {
     pub command_type: String,
@@ -90,7 +95,27 @@ impl NativeLuaEngine {
     }
 
     pub fn new_with_library_path(lua_library_path: Option<String>) -> LuaResult<Self> {
+        println!("=== CREATING NEW LUA ENGINE ===");
+        println!("Library path: {:?}", lua_library_path);
+
+        // Create Lua with standard libraries including debug
         let lua = Lua::new();
+
+        // Enable debug library for turtle.lua compatibility
+        lua.load(r#"
+            -- Enable debug library functions that turtle.lua needs
+            if not debug then
+                debug = {
+                    getinfo = function(level)
+                        -- Simple implementation for turtle.lua compatibility
+                        if level and level > 2 then
+                            return { source = "module" }
+                        end
+                        return nil
+                    end
+                }
+            end
+        "#).exec()?;
         let output_buffer = Arc::new(Mutex::new(Vec::new()));
         let turtle_state = Arc::new(Mutex::new(TurtleState::default()));
         let adeko_state = Arc::new(Mutex::new(AdekoState::default()));
@@ -105,7 +130,10 @@ impl NativeLuaEngine {
             lua_library_path,
         };
 
+        println!("=== SETTING UP LUA ENVIRONMENT ===");
         engine.setup_lua_environment()?;
+        println!("=== FINISHED SETTING UP LUA ENVIRONMENT ===");
+
         Ok(engine)
     }
 
@@ -139,15 +167,52 @@ impl NativeLuaEngine {
         })?;
         globals.set("print", print_fn)?;
 
-        // Setup turtle graphics functions
+        // Load bundled Lua libraries
+        self.load_bundled_lua_libraries(&globals)?;
+
+        Ok(())
+    }
+
+    fn load_bundled_lua_libraries(&self, globals: &Table) -> LuaResult<()> {
+        println!("=== LOADING BUNDLED LUA LIBRARIES ===");
+
+        // Load ADekoLib.lua as a module and set it globally
+        println!("Loading bundled ADekoLib.lua ({} bytes)", ADEKO_LIB_LUA.len());
+
+        // Execute the module and capture the returned ADekoLib table
+        let adeko_lib_table: Value = self.lua.load(ADEKO_LIB_LUA).call(())?;
+        globals.set("ADekoLib", adeko_lib_table)?;
+
+        println!("✓ ADekoLib.lua loaded successfully (start() will be called before script execution)");
+
+        // Load turtle.lua (but don't override our built-in turtle functions)
+        println!("Loading bundled turtle.lua ({} bytes)", TURTLE_LUA.len());
+        // We'll load it but our built-in turtle functions will take precedence
+        self.lua.load(TURTLE_LUA).exec().unwrap_or_else(|e| {
+            println!("⚠ Warning: Could not load turtle.lua: {}", e);
+            println!("Using built-in turtle functions instead");
+        });
+
+        // Setup turtle graphics functions (these will override any from turtle.lua)
         self.setup_turtle_functions(&globals)?;
 
-        // Setup AdekoLib functions
-        self.setup_adeko_functions(&globals)?;
+        // Don't load ADekoDebugMode.lua here - it will be loaded when required
+        // because it immediately tries to execute modelMain() which doesn't exist yet
+        println!("ADekoDebugMode.lua will be loaded when required by user script");
 
         // Setup debug mode variables
         self.setup_debug_variables(&globals)?;
 
+        // Mark modules as loaded in package.loaded
+        let package: Table = globals.get("package")?;
+        let loaded: Table = package.get("loaded")?;
+
+        let adeko_lib = globals.get::<_, Value>("ADekoLib")?;
+        loaded.set("ADekoLib", adeko_lib)?;
+        loaded.set("turtle", Value::Boolean(true))?;
+        // Don't mark ADekoDebugMode as loaded yet - it will be loaded when required
+
+        println!("✓ All bundled Lua libraries loaded successfully");
         Ok(())
     }
 
@@ -188,36 +253,39 @@ impl NativeLuaEngine {
                 }
             }
 
-            // Special handling for built-in modules
+            // Special handling for bundled modules
             match module_name.as_str() {
                 "ADekoLib" => {
-                    println!("Loading built-in ADekoLib module");
-                    // ADekoLib is built-in, return the global ADekoLib table
+                    println!("ADekoLib module requested - checking if already loaded globally");
                     let adeko_lib = lua.globals().get::<_, Value>("ADekoLib")?;
-                    loaded.set(module_name.clone(), adeko_lib.clone())?;
-                    println!("ADekoLib module loaded successfully");
-                    return Ok(adeko_lib);
+                    if !matches!(adeko_lib, Value::Nil) {
+                        loaded.set(module_name.clone(), adeko_lib.clone())?;
+                        println!("✓ ADekoLib module found globally and returned");
+                        return Ok(adeko_lib);
+                    }
+
+                    // If not found, this shouldn't happen since we load it at startup
+                    println!("⚠ Warning: ADekoLib not found globally, this shouldn't happen");
+                    return Err(mlua::Error::RuntimeError("ADekoLib should be loaded globally".to_string()));
                 }
                 "turtle" => {
-                    println!("Loading built-in turtle module");
-                    // Turtle functions are built-in, return true to indicate success
+                    println!("Turtle module requested - using built-in functions");
                     let result = Value::Boolean(true);
                     loaded.set(module_name.clone(), result.clone())?;
-                    println!("Turtle module loaded successfully");
+                    println!("✓ Built-in turtle module loaded successfully");
                     return Ok(result);
                 }
                 "ADekoDebugMode" => {
-                    println!("Loading built-in ADekoDebugMode module");
-                    // Special handling for ADekoDebugMode - it's not a typical module
-                    // Instead of loading the file, we just return true since the debug variables
-                    // are already set up in setup_debug_variables()
+                    println!("ADekoDebugMode module requested - loading bundled version");
+                    // Load ADekoDebugMode.lua now (when it's actually needed)
+                    lua.load(ADEKO_DEBUG_MODE_LUA).exec()?;
                     let result = Value::Boolean(true);
                     loaded.set(module_name.clone(), result.clone())?;
-                    println!("ADekoDebugMode module loaded successfully");
+                    println!("✓ ADekoDebugMode module loaded successfully");
                     return Ok(result);
                 }
                 _ => {
-                    println!("Module {} not found in built-in modules", module_name);
+                    println!("Module {} not found in bundled modules", module_name);
                 }
             }
 
@@ -242,6 +310,8 @@ impl NativeLuaEngine {
         globals.set("require", custom_require)?;
         Ok(())
     }
+
+
 
     fn setup_turtle_functions(&self, globals: &Table) -> LuaResult<()> {
         let turtle_state = Arc::clone(&self.turtle_state);
@@ -815,6 +885,13 @@ impl NativeLuaEngine {
 
         println!("Executing Lua script (length: {})", script.len());
         println!("Script content preview: {}", &script[..std::cmp::min(200, script.len())]);
+
+        // Initialize ADekoLib before script execution
+        println!("Skipping ADekoLib.start() call to debug the issue");
+        // match self.lua.load("ADekoLib.start()").exec() {
+        //     Ok(_) => println!("✓ ADekoLib.start() called successfully"),
+        //     Err(e) => println!("⚠ Warning: ADekoLib.start() failed: {}", e),
+        // }
 
         // Execute the script
         match self.lua.load(script).exec() {

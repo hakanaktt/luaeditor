@@ -459,66 +459,99 @@ async fn execute_lua_script(
     // Prepare the script content with library includes if needed
     let mut full_script = String::new();
 
-    // Include AdekoLib if available (for compatibility, though it's now built-in)
-    let adeko_lib_path = Path::new(&lua_library_path).join("ADekoLib.lua");
-    if adeko_lib_path.exists() {
-        // Read and include the external AdekoLib if it exists
-        if let Ok(lib_content) = fs::read_to_string(&adeko_lib_path) {
-            full_script.push_str("-- External ADekoLib.lua\n");
-            full_script.push_str(&lib_content);
-            full_script.push_str("\n");
-        }
-    }
+    // AdekoLib.lua is now bundled with the app and loaded automatically by the Lua engine
+    println!("=== USING BUNDLED ADEKO LIB ===");
+    println!("AdekoLib.lua is bundled with the app and loaded automatically");
+    println!("No need to load from external files");
 
-    // Include turtle graphics if available (for compatibility, though it's now built-in)
-    let turtle_lib_path = Path::new(&lua_library_path).join("turtle.lua");
-    if turtle_lib_path.exists() {
-        if let Ok(turtle_content) = fs::read_to_string(&turtle_lib_path) {
-            full_script.push_str("-- External turtle.lua\n");
-            full_script.push_str(&turtle_content);
-            full_script.push_str("\n");
-        }
-        // Open turtle graphics window
-        full_script.push_str("open('Lua Debug - Turtle Graphics')\n");
-    }
+    // Skip loading external turtle.lua - we use built-in turtle functions
+    println!("=== USING BUILT-IN TURTLE FUNCTIONS ===");
+    println!("Skipping external turtle.lua (uses wxWidgets which is not available)");
+    println!("Using built-in turtle graphics implementation instead");
+
+    // Open turtle graphics window using built-in function
+    full_script.push_str("-- Using built-in turtle graphics\n");
+    full_script.push_str("-- open('Lua Debug - Turtle Graphics')\n");
 
     if debug_mode {
-        // In debug mode, we create a simplified debug environment that just calls modelMain()
-        // This bypasses potential issues in ADekoDebugMode.lua while providing the same functionality
-        println!("Debug mode: Creating simplified debug environment");
+        // In debug mode, we emulate ZeroBrane's behavior:
+        // 1. First load the user script to define modelMain()
+        // 2. Then execute ADekoDebugMode.lua which sets up 6-face layout and calls modelMain()
+        println!("🔧 Debug mode: Emulating ZeroBrane-style debugging");
 
         // Add the user script which defines modelMain()
-        full_script.push_str("\n-- User Script (defines modelMain function):\n");
+        full_script.push_str("\n-- ===== USER SCRIPT (defines modelMain function) =====\n");
         full_script.push_str(&script_content);
         full_script.push_str("\n\n");
 
-        // Add a simplified debug environment that calls modelMain()
-        full_script.push_str("-- Simplified Debug Environment:\n");
-        full_script.push_str("-- Set up debug variables (similar to ADekoDebugMode.lua)\n");
-        full_script.push_str("X = 500\n");
-        full_script.push_str("Y = 700\n");
-        full_script.push_str("materialThickness = 18\n");
-        full_script.push_str("offset = 20\n");
-        full_script.push_str("edge1layer = \"LMM0\"\n");
-        full_script.push_str("edge2layer = \"LMM1\"\n");
-        full_script.push_str("edge3layer = \"LMM2\"\n");
-        full_script.push_str("edge4layer = \"LMM3\"\n");
-        full_script.push_str("edge1thickness = 0.1\n");
-        full_script.push_str("edge2thickness = 0.2\n");
-        full_script.push_str("edge3thickness = 0.3\n");
-        full_script.push_str("edge4thickness = 0.4\n");
-        full_script.push_str("doesSizeIncludeEdgeThickness = \"false\"\n");
-        full_script.push_str("modelParameters = \"\"\n");
-        full_script.push_str("\n-- Call the user's modelMain function\n");
-        full_script.push_str("if modelMain then\n");
-        full_script.push_str("  print('Debug mode: Calling modelMain...')\n");
-        full_script.push_str("  modelMain()\n");
-        full_script.push_str("  print('Debug mode: modelMain completed')\n");
-        full_script.push_str("else\n");
-        full_script.push_str("  print('Debug mode: modelMain function not found')\n");
-        full_script.push_str("end\n");
+        // Load ADekoDebugMode.lua from file (will be packaged with the app)
+        println!("📋 Debug mode: Loading ADekoDebugMode.lua for 6-face layout");
+        let debug_mode_path = Path::new(&lua_library_path).join("ADekoDebugMode.lua");
+        println!("📁 Attempting to load ADekoDebugMode.lua from: {}", debug_mode_path.display());
+
+        if debug_mode_path.exists() {
+            match fs::read_to_string(&debug_mode_path) {
+                Ok(debug_content) => {
+                    println!("✅ Successfully loaded ADekoDebugMode.lua ({} bytes)", debug_content.len());
+                    full_script.push_str("-- ===== ADEKOLIB DEBUG MODE (ZeroBrane-style 6-face layout) =====\n");
+                    full_script.push_str("print('🎯 Starting ZeroBrane-style debug mode with 6-face layout')\n");
+                    full_script.push_str(&debug_content);
+                    full_script.push_str("\nprint('✅ Debug mode execution completed')\n");
+                }
+                Err(e) => {
+                    println!("❌ Failed to read ADekoDebugMode.lua: {}", e);
+                    // Enhanced fallback with better ZeroBrane emulation
+                    full_script.push_str("-- ===== FALLBACK DEBUG ENVIRONMENT =====\n");
+                    full_script.push_str("print('⚠️  Using fallback debug environment (ADekoDebugMode.lua not found)')\n");
+                    full_script.push_str("X = 500\nY = 700\nmaterialThickness = 18\noffset = 20\n");
+                    full_script.push_str("edge1layer=\"LMM0\"\nedge2layer=\"LMM1\"\nedge3layer=\"LMM2\"\nedge4layer=\"LMM3\"\n");
+                    full_script.push_str("edge1thickness=0.1\nedge2thickness=0.2\nedge3thickness=0.3\nedge4thickness=0.4\n");
+                    full_script.push_str("doesSizeIncludeEdgeThickness=\"false\"\nmodelParameters=\"\"\n");
+                    full_script.push_str("print('🔧 Setting up basic debug environment')\n");
+                    full_script.push_str("if ADekoLib then ADekoLib.start() end\n");
+                    full_script.push_str("if modelMain then\n");
+                    full_script.push_str("  print('📞 Calling modelMain() function')\n");
+                    full_script.push_str("  modelMain()\n");
+                    full_script.push_str("  print('✅ modelMain() execution completed')\n");
+                    full_script.push_str("else\n");
+                    full_script.push_str("  print('❌ modelMain function not found in script')\n");
+                    full_script.push_str("end\n");
+                    full_script.push_str("if ADekoLib then ADekoLib.finish() end\n");
+                }
+            }
+        } else {
+            println!("❌ ADekoDebugMode.lua not found at: {}", debug_mode_path.display());
+            // Enhanced fallback with better ZeroBrane emulation
+            full_script.push_str("-- ===== SIMPLIFIED DEBUG ENVIRONMENT =====\n");
+            full_script.push_str("print('⚠️  ADekoDebugMode.lua not found, using simplified debug environment')\n");
+            full_script.push_str("X = 500\nY = 700\nmaterialThickness = 18\noffset = 20\n");
+            full_script.push_str("edge1layer=\"LMM0\"\nedge2layer=\"LMM1\"\nedge3layer=\"LMM2\"\nedge4layer=\"LMM3\"\n");
+            full_script.push_str("edge1thickness=0.1\nedge2thickness=0.2\nedge3thickness=0.3\nedge4thickness=0.4\n");
+            full_script.push_str("doesSizeIncludeEdgeThickness=\"false\"\nmodelParameters=\"\"\n");
+            full_script.push_str("print('🔧 Setting up basic debug environment')\n");
+            full_script.push_str("if ADekoLib then ADekoLib.start() end\n");
+            full_script.push_str("if modelMain then\n");
+            full_script.push_str("  print('📞 Calling modelMain() function')\n");
+            full_script.push_str("  modelMain()\n");
+            full_script.push_str("  print('✅ modelMain() execution completed')\n");
+            full_script.push_str("else\n");
+            full_script.push_str("  print('❌ modelMain function not found in script')\n");
+            full_script.push_str("end\n");
+            full_script.push_str("if ADekoLib then ADekoLib.finish() end\n");
+        }
 
         println!("Debug mode: Final script length: {}", full_script.len());
+
+        // Debug: Show the last few lines of the script to check for syntax issues
+        let lines: Vec<&str> = full_script.lines().collect();
+        let total_lines = lines.len();
+        println!("Debug mode: Total lines in final script: {}", total_lines);
+        if total_lines > 10 {
+            println!("Debug mode: Last 10 lines of script:");
+            for (i, line) in lines.iter().enumerate().skip(total_lines - 10) {
+                println!("  {}: {}", i + 1, line);
+            }
+        }
     } else {
         // Normal mode: just add the user script
         full_script.push_str("\n-- User Script:\n");
