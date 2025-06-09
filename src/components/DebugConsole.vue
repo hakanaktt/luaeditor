@@ -15,6 +15,15 @@
       </div>
       <div class="flex items-center space-x-1">
         <button
+          v-if="drawCommands.length > 0"
+          @click="toggleTurtleGraphics"
+          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+          :class="{ 'text-blue-600': showTurtleGraphics }"
+          :title="$t('debugConsole.toggleTurtleGraphics')"
+        >
+          <Palette :size="14" />
+        </button>
+        <button
           @click="clearConsole"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('debugConsole.clearConsole')"
@@ -40,7 +49,13 @@
 
     <!-- Console Content -->
     <div v-if="!isCollapsed" class="console-content">
-      <div ref="outputContainer" class="output-container">
+      <!-- Turtle Graphics Canvas -->
+      <div v-if="showTurtleGraphics && drawCommands.length > 0" class="turtle-graphics-container">
+        <TurtleCanvas :draw-commands="drawCommands" />
+      </div>
+
+      <!-- Text Output -->
+      <div ref="outputContainer" class="output-container" :class="{ 'with-graphics': showTurtleGraphics && drawCommands.length > 0 }">
         <div v-if="outputs.length === 0" class="no-output">
           {{ $t('debugConsole.noOutput') }}
         </div>
@@ -64,7 +79,8 @@
 
 <script setup lang="ts">
 import { ref, nextTick, watch } from 'vue'
-import { Terminal, Trash2, Copy, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { Terminal, Trash2, Copy, ChevronDown, ChevronUp, Palette } from 'lucide-vue-next'
+import TurtleCanvas from './TurtleCanvas.vue'
 
 interface DebugOutput {
   type: 'info' | 'success' | 'error'
@@ -72,12 +88,26 @@ interface DebugOutput {
   timestamp: Date
 }
 
+interface DrawCommand {
+  command_type: string
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  radius: number
+  color: string
+  size: number
+  text: string
+}
+
 interface Props {
   isVisible?: boolean
+  drawCommands?: DrawCommand[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isVisible: true
+  isVisible: true,
+  drawCommands: () => []
 })
 
 defineEmits<{
@@ -89,6 +119,12 @@ const isExecuting = ref(false)
 const lastExecutionTime = ref<number | null>(null)
 const outputs = ref<DebugOutput[]>([])
 const outputContainer = ref<HTMLElement>()
+const showTurtleGraphics = ref(true)
+const drawCommands = ref<DrawCommand[]>([])
+
+const toggleTurtleGraphics = () => {
+  showTurtleGraphics.value = !showTurtleGraphics.value
+}
 
 const addOutput = (type: DebugOutput['type'], content: string) => {
   outputs.value.push({
@@ -108,6 +144,7 @@ const addOutput = (type: DebugOutput['type'], content: string) => {
 const clearConsole = () => {
   outputs.value = []
   lastExecutionTime.value = null
+  drawCommands.value = []
 }
 
 const copyOutput = async () => {
@@ -144,6 +181,15 @@ const setExecutionTime = (timeMs: number) => {
   lastExecutionTime.value = timeMs
 }
 
+const setDrawCommands = (commands: DrawCommand[]) => {
+  console.log('DebugConsole setDrawCommands called with:', JSON.stringify(commands, null, 2))
+  drawCommands.value = commands
+  console.log('DebugConsole local drawCommands.value after setting:', JSON.stringify(drawCommands.value, null, 2))
+  if (commands.length > 0) {
+    showTurtleGraphics.value = true
+  }
+}
+
 // Watch for visibility changes
 watch(() => props.isVisible, (visible) => {
   if (!visible) {
@@ -151,12 +197,20 @@ watch(() => props.isVisible, (visible) => {
   }
 })
 
+// Watch for draw commands prop changes
+watch(() => props.drawCommands, (newCommands) => {
+  if (newCommands) {
+    setDrawCommands(newCommands)
+  }
+}, { immediate: true })
+
 // Expose methods for parent component
 defineExpose({
   addOutput,
   clearConsole,
   setExecuting,
-  setExecutionTime
+  setExecutionTime,
+  setDrawCommands
 })
 </script>
 
@@ -181,10 +235,20 @@ defineExpose({
   height: calc(100% - 40px);
 }
 
+.turtle-graphics-container {
+  @apply border-b border-gray-200;
+  height: 300px;
+  background-color: #f8f9fa;
+}
+
 .output-container {
   @apply flex-1 overflow-y-auto p-2 font-mono text-sm;
   background-color: #1e1e1e;
   color: #d4d4d4;
+}
+
+.output-container.with-graphics {
+  height: calc(100% - 300px);
 }
 
 .no-output {

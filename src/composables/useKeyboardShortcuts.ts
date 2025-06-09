@@ -60,14 +60,14 @@ const shortcuts: KeyboardShortcut[] = [
 
   // Debug operations
   { key: 'F5', description: 'Run Script', action: 'run-script', category: 'Debug' },
-  { key: 'F5', shiftKey: true, description: 'Run with Debug Mode', action: 'run-with-debug', category: 'Debug' },
+  { key: 'F7', description: 'Run with Debug Mode', action: 'run-with-debug', category: 'Debug' },
   { key: 'F5', ctrlKey: true, description: 'Stop Execution', action: 'stop-execution', category: 'Debug' },
   { key: '`', ctrlKey: true, description: 'Toggle Debug Console', action: 'toggle-debug-console', category: 'Debug' },
 
   // Tools operations
   { key: ',', ctrlKey: true, description: 'Settings', action: 'toggle-settings', category: 'Tools' },
   { key: 'F2', description: 'Function Browser', action: 'show-function-browser', category: 'Tools' },
-  { key: 'F7', description: 'Validate Lua', action: 'validate-lua', category: 'Tools' },
+  { key: 'F8', description: 'Validate Lua', action: 'validate-lua', category: 'Tools' },
   { key: 'f', shiftKey: true, altKey: true, description: 'Format Code', action: 'format-code', category: 'Tools' },
 
   // Help operations

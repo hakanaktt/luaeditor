@@ -202,7 +202,17 @@ export default {
     noOutput: 'No output',
     clearConsole: 'Clear Console',
     copyOutput: 'Copy Output',
-    saveOutput: 'Save Output to File'
+    saveOutput: 'Save Output to File',
+    toggleTurtleGraphics: 'Toggle Turtle Graphics'
+  },
+
+  // Turtle Canvas
+  turtleCanvas: {
+    title: 'Turtle Graphics',
+    commands: 'commands',
+    resetView: 'Reset View',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out'
   },
 
   // Toolbar

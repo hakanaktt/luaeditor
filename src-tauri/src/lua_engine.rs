@@ -52,7 +52,9 @@ pub struct AdekoState {
     pub current_face: String,
     pub current_layer: String,
     pub current_thickness: f64,
+    #[allow(dead_code)]
     pub show_points_enabled: bool,
+    #[allow(dead_code)]
     pub listing_enabled: bool,
     pub part_width: f64,
     pub part_height: f64,
@@ -82,6 +84,7 @@ pub struct NativeLuaEngine {
 }
 
 impl NativeLuaEngine {
+    #[allow(dead_code)]
     pub fn new() -> LuaResult<Self> {
         Self::new_with_library_path(None)
     }
@@ -171,7 +174,6 @@ impl NativeLuaEngine {
         use std::path::Path;
 
         let lua_library_path = self.lua_library_path.clone();
-        let output_buffer = Arc::clone(&self.output_buffer);
 
         let custom_require = self.lua.create_function(move |lua, module_name: String| {
             let package: Table = lua.globals().get("package")?;
@@ -384,12 +386,17 @@ impl NativeLuaEngine {
         })?;
         globals.set("wipe", wipe_fn)?;
 
-        // text function
+        // text function - matches turtle.lua signature: text(text, angle, dx, dy)
         let output_buffer_clone = Arc::clone(&output_buffer);
+        let draw_commands_clone = Arc::clone(&draw_commands);
+        let turtle_state_clone = Arc::clone(&turtle_state);
         let text_fn = self.lua.create_function(move |_, args: mlua::Variadic<Value>| {
             let mut output = output_buffer_clone.lock().unwrap();
+            let mut commands = draw_commands_clone.lock().unwrap();
+            let state = turtle_state_clone.lock().unwrap();
 
-            let text = args.get(0).map(|v| match v {
+            // Parse arguments: text(text, angle, dx, dy)
+            let text_content = args.get(0).map(|v| match v {
                 Value::String(s) => s.to_str().unwrap_or("").to_string(),
                 Value::Number(n) => n.to_string(),
                 Value::Integer(i) => i.to_string(),
@@ -397,11 +404,30 @@ impl NativeLuaEngine {
                 Value::Nil => "nil".to_string(),
                 _ => format!("{:?}", v),
             }).unwrap_or_default();
-            let _angle = args.get(1).and_then(|v| v.as_number()).unwrap_or(0.0);
-            let x = args.get(2).and_then(|v| v.as_number()).unwrap_or(0.0);
-            let y = args.get(3).and_then(|v| v.as_number()).unwrap_or(0.0);
 
-            output.push(format!("Text at ({:.2}, {:.2}): {}", x, y, text));
+            let _angle = args.get(1).and_then(|v| v.as_number()).unwrap_or(0.0);
+            let dx = args.get(2).and_then(|v| v.as_number()).unwrap_or(0.0);
+            let dy = args.get(3).and_then(|v| v.as_number()).unwrap_or(0.0);
+
+            // Calculate final position (turtle position + offset)
+            let x = state.x + dx;
+            let y = state.y + dy;
+
+            output.push(format!("Text at ({:.2}, {:.2}): {}", x, y, text_content));
+
+            // Add draw command for text
+            commands.push(DrawCommand {
+                command_type: "text".to_string(),
+                x1: x,
+                y1: y,
+                x2: 0.0,
+                y2: 0.0,
+                radius: 0.0,
+                color: state.pen_color.clone(),
+                size: state.pen_size,
+                text: text_content,
+            });
+
             Ok(())
         })?;
         globals.set("text", text_fn)?;

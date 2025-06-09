@@ -202,7 +202,17 @@ export default {
     noOutput: 'Çıktı yok',
     clearConsole: 'Konsolu Temizle',
     copyOutput: 'Çıktıyı Kopyala',
-    saveOutput: 'Çıktıyı Dosyaya Kaydet'
+    saveOutput: 'Çıktıyı Dosyaya Kaydet',
+    toggleTurtleGraphics: 'Kaplumbağa Grafiklerini Aç/Kapat'
+  },
+
+  // Kaplumbağa Tuvali
+  turtleCanvas: {
+    title: 'Kaplumbağa Grafikleri',
+    commands: 'komut',
+    resetView: 'Görünümü Sıfırla',
+    zoomIn: 'Yakınlaştır',
+    zoomOut: 'Uzaklaştır'
   },
 
   // Araç çubuğu

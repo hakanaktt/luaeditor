@@ -126,6 +126,7 @@
           v-if="showDebugConsole"
           ref="debugConsoleRef"
           :is-visible="showDebugConsole"
+          :draw-commands="currentDrawCommands"
           @toggle-visibility="handleToggleDebugConsole"
         />
       </div>
@@ -177,6 +178,7 @@ import { useI18n } from '@/composables/useI18n'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useNotifications } from '@/composables/useNotifications'
 import type { AppSettings } from './types'
+import type { DrawCommand } from '@/utils/luaExecutor'
 
 const { t, changeLanguage } = useI18n()
 const { registerActions } = useKeyboardShortcuts()
@@ -200,6 +202,9 @@ const appSettings = ref<AppSettings>({
   sidebar_width: 320
 })
 const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
+
+// Draw commands for turtle graphics
+const currentDrawCommands = ref<DrawCommand[]>([])
 
 // Sidebar resize functionality
 const sidebarWidth = ref<number>(320)
@@ -455,6 +460,12 @@ const handleRunScript = async (): Promise<void> => {
         if (result.output) {
           debugConsoleRef.value.addOutput('info', result.output)
         }
+        // Store draw commands for turtle graphics
+        currentDrawCommands.value = result.draw_commands || []
+        console.log('Draw commands received:', JSON.stringify(currentDrawCommands.value, null, 2))
+        if (debugConsoleRef.value) {
+          debugConsoleRef.value.setDrawCommands(currentDrawCommands.value)
+        }
         notifications.scriptExecutionCompleted(
           currentFileName.value || currentFile.value,
           result.execution_time_ms
@@ -515,6 +526,12 @@ const handleRunWithDebug = async (): Promise<void> => {
         if (result.output) {
           debugConsoleRef.value.addOutput('info', result.output)
         }
+        // Store draw commands for turtle graphics
+        currentDrawCommands.value = result.draw_commands || []
+        console.log('Draw commands received (debug mode):', JSON.stringify(currentDrawCommands.value, null, 2))
+        if (debugConsoleRef.value) {
+          debugConsoleRef.value.setDrawCommands(currentDrawCommands.value)
+        }
         notifications.scriptExecutionCompleted(
           currentFileName.value || currentFile.value,
           result.execution_time_ms
@@ -558,6 +575,7 @@ const handleClearDebugConsole = (): void => {
   if (debugConsoleRef.value) {
     debugConsoleRef.value.clearConsole()
   }
+  currentDrawCommands.value = []
 }
 
 // Sidebar resize methods

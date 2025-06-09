@@ -450,7 +450,7 @@ fn get_lua_library_path(model_library_path: String) -> Result<String, String> {
 async fn execute_lua_script(
     script_content: String,
     lua_library_path: String,
-    debug_mode: bool,
+    _debug_mode: bool,
 ) -> Result<LuaExecutionResult, String> {
     // Create a new native Lua engine instance with library path
     let engine = NativeLuaEngine::new_with_library_path(Some(lua_library_path.clone()))

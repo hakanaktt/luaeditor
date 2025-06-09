@@ -1,10 +1,23 @@
 import { invoke } from '@tauri-apps/api/core'
 
+export interface DrawCommand {
+  command_type: string
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  radius: number
+  color: string
+  size: number
+  text: string
+}
+
 export interface LuaExecutionResult {
   success: boolean
   output: string
   error: string
   execution_time_ms: number
+  draw_commands: DrawCommand[]
 }
 
 export interface LuaExecutorOptions {
@@ -29,7 +42,8 @@ export async function executeLuaScript(options: LuaExecutorOptions): Promise<Lua
       success: false,
       output: '',
       error: `Failed to execute Lua script: ${error}`,
-      execution_time_ms: 0
+      execution_time_ms: 0,
+      draw_commands: []
     }
   }
 }
