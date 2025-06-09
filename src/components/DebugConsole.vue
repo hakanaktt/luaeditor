@@ -183,10 +183,14 @@ const setExecutionTime = (timeMs: number) => {
 
 const setDrawCommands = (commands: DrawCommand[]) => {
   console.log('DebugConsole setDrawCommands called with:', JSON.stringify(commands, null, 2))
+  console.log('Stack trace:', new Error().stack)
   drawCommands.value = commands
   console.log('DebugConsole local drawCommands.value after setting:', JSON.stringify(drawCommands.value, null, 2))
   if (commands.length > 0) {
     showTurtleGraphics.value = true
+    console.log('Showing turtle graphics because we have', commands.length, 'commands')
+  } else {
+    console.log('Not showing turtle graphics - no commands')
   }
 }
 

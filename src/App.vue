@@ -496,11 +496,9 @@ const handleRunScript = async (): Promise<void> => {
           debugConsoleRef.value.addOutput('info', result.output)
         }
         // Store draw commands for turtle graphics
+        console.log('Full result object:', JSON.stringify(result, null, 2))
         currentDrawCommands.value = result.draw_commands || []
         console.log('Draw commands received:', JSON.stringify(currentDrawCommands.value, null, 2))
-        if (debugConsoleRef.value) {
-          debugConsoleRef.value.setDrawCommands(currentDrawCommands.value)
-        }
         notifications.scriptExecutionCompleted(
           currentFileName.value || currentFile.value,
           result.execution_time_ms
@@ -562,11 +560,9 @@ const handleRunWithDebug = async (): Promise<void> => {
           debugConsoleRef.value.addOutput('info', result.output)
         }
         // Store draw commands for turtle graphics
+        console.log('Full result object (debug mode):', JSON.stringify(result, null, 2))
         currentDrawCommands.value = result.draw_commands || []
         console.log('Draw commands received (debug mode):', JSON.stringify(currentDrawCommands.value, null, 2))
-        if (debugConsoleRef.value) {
-          debugConsoleRef.value.setDrawCommands(currentDrawCommands.value)
-        }
         notifications.scriptExecutionCompleted(
           currentFileName.value || currentFile.value,
           result.execution_time_ms

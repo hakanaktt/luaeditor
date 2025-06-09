@@ -31,6 +31,12 @@ export interface LuaExecutorOptions {
  */
 export async function executeLuaScript(options: LuaExecutorOptions): Promise<LuaExecutionResult> {
   try {
+    console.log('=== SENDING TO RUST ===')
+    console.log('Script content:', options.scriptContent)
+    console.log('Lua library path:', options.luaLibraryPath)
+    console.log('Debug mode:', options.debugMode)
+    console.log('=== END SENDING TO RUST ===')
+
     // Use native Lua execution (always available with embedded mlua)
     return await invoke<LuaExecutionResult>('execute_lua_script', {
       scriptContent: options.scriptContent,

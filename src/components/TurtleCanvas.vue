@@ -152,7 +152,15 @@ const drawCanvas = () => {
   console.log('drawCanvas called with', props.drawCommands.length, 'commands')
   const canvas = canvasRef.value
   if (!canvas) {
-    console.log('No canvas ref')
+    console.log('No canvas ref, retrying in 100ms...')
+    // Retry after a short delay to allow the canvas to mount
+    setTimeout(() => {
+      if (canvasRef.value) {
+        drawCanvas()
+      } else {
+        console.log('Canvas ref still not available after retry')
+      }
+    }, 100)
     return
   }
 

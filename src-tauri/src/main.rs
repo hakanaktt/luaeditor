@@ -450,7 +450,7 @@ fn get_lua_library_path(model_library_path: String) -> Result<String, String> {
 async fn execute_lua_script(
     script_content: String,
     lua_library_path: String,
-    _debug_mode: bool,
+    debug_mode: bool,
 ) -> Result<LuaExecutionResult, String> {
     // Create a new native Lua engine instance with library path
     let engine = NativeLuaEngine::new_with_library_path(Some(lua_library_path.clone()))
@@ -482,12 +482,53 @@ async fn execute_lua_script(
         full_script.push_str("open('Lua Debug - Turtle Graphics')\n");
     }
 
-    // Don't include AdekoDebugMode.lua directly since it contains executable code
-    // Instead, let the custom require function handle it when needed
+    if debug_mode {
+        // In debug mode, we create a simplified debug environment that just calls modelMain()
+        // This bypasses potential issues in ADekoDebugMode.lua while providing the same functionality
+        println!("Debug mode: Creating simplified debug environment");
 
-    // Add the user script
-    full_script.push_str("\n-- User Script:\n");
-    full_script.push_str(&script_content);
+        // Add the user script which defines modelMain()
+        full_script.push_str("\n-- User Script (defines modelMain function):\n");
+        full_script.push_str(&script_content);
+        full_script.push_str("\n\n");
+
+        // Add a simplified debug environment that calls modelMain()
+        full_script.push_str("-- Simplified Debug Environment:\n");
+        full_script.push_str("-- Set up debug variables (similar to ADekoDebugMode.lua)\n");
+        full_script.push_str("X = 500\n");
+        full_script.push_str("Y = 700\n");
+        full_script.push_str("materialThickness = 18\n");
+        full_script.push_str("offset = 20\n");
+        full_script.push_str("edge1layer = \"LMM0\"\n");
+        full_script.push_str("edge2layer = \"LMM1\"\n");
+        full_script.push_str("edge3layer = \"LMM2\"\n");
+        full_script.push_str("edge4layer = \"LMM3\"\n");
+        full_script.push_str("edge1thickness = 0.1\n");
+        full_script.push_str("edge2thickness = 0.2\n");
+        full_script.push_str("edge3thickness = 0.3\n");
+        full_script.push_str("edge4thickness = 0.4\n");
+        full_script.push_str("doesSizeIncludeEdgeThickness = \"false\"\n");
+        full_script.push_str("modelParameters = \"\"\n");
+        full_script.push_str("\n-- Call the user's modelMain function\n");
+        full_script.push_str("if modelMain then\n");
+        full_script.push_str("  print('Debug mode: Calling modelMain...')\n");
+        full_script.push_str("  modelMain()\n");
+        full_script.push_str("  print('Debug mode: modelMain completed')\n");
+        full_script.push_str("else\n");
+        full_script.push_str("  print('Debug mode: modelMain function not found')\n");
+        full_script.push_str("end\n");
+
+        println!("Debug mode: Final script length: {}", full_script.len());
+    } else {
+        // Normal mode: just add the user script
+        full_script.push_str("\n-- User Script:\n");
+        full_script.push_str(&script_content);
+    }
+
+    // Debug: Print the final script that will be executed
+    println!("=== FINAL SCRIPT TO EXECUTE ===");
+    println!("{}", full_script);
+    println!("=== END OF SCRIPT ===");
 
     // Execute the script using the native Lua engine
     Ok(engine.execute_script(&full_script))

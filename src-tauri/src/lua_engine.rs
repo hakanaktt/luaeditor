@@ -176,12 +176,14 @@ impl NativeLuaEngine {
         let lua_library_path = self.lua_library_path.clone();
 
         let custom_require = self.lua.create_function(move |lua, module_name: String| {
+            println!("Custom require called for module: {}", module_name);
             let package: Table = lua.globals().get("package")?;
             let loaded: Table = package.get("loaded")?;
 
             // Check if module is already loaded
             if let Ok(module) = loaded.get::<_, Value>(module_name.clone()) {
                 if !matches!(module, Value::Nil) {
+                    println!("Module {} already loaded", module_name);
                     return Ok(module);
                 }
             }
@@ -189,26 +191,34 @@ impl NativeLuaEngine {
             // Special handling for built-in modules
             match module_name.as_str() {
                 "ADekoLib" => {
+                    println!("Loading built-in ADekoLib module");
                     // ADekoLib is built-in, return the global ADekoLib table
                     let adeko_lib = lua.globals().get::<_, Value>("ADekoLib")?;
                     loaded.set(module_name.clone(), adeko_lib.clone())?;
+                    println!("ADekoLib module loaded successfully");
                     return Ok(adeko_lib);
                 }
                 "turtle" => {
+                    println!("Loading built-in turtle module");
                     // Turtle functions are built-in, return true to indicate success
                     let result = Value::Boolean(true);
                     loaded.set(module_name.clone(), result.clone())?;
+                    println!("Turtle module loaded successfully");
                     return Ok(result);
                 }
                 "ADekoDebugMode" => {
+                    println!("Loading built-in ADekoDebugMode module");
                     // Special handling for ADekoDebugMode - it's not a typical module
                     // Instead of loading the file, we just return true since the debug variables
                     // are already set up in setup_debug_variables()
                     let result = Value::Boolean(true);
                     loaded.set(module_name.clone(), result.clone())?;
+                    println!("ADekoDebugMode module loaded successfully");
                     return Ok(result);
                 }
-                _ => {}
+                _ => {
+                    println!("Module {} not found in built-in modules", module_name);
+                }
             }
 
             // Handle external library modules (excluding ADekoDebugMode which is handled above)
@@ -247,6 +257,8 @@ impl NativeLuaEngine {
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
 
+            println!("Turtle move called with distance: {}", distance);
+
             let new_x = state.x + distance * state.angle.to_radians().cos();
             let new_y = state.y + distance * state.angle.to_radians().sin();
 
@@ -266,6 +278,7 @@ impl NativeLuaEngine {
                     size: state.pen_size,
                     text: String::new(),
                 });
+                println!("Added line draw command, total commands: {}", commands.len());
             } else {
                 output.push(format!("Moving from ({:.2}, {:.2}) to ({:.2}, {:.2})",
                     state.x, state.y, new_x, new_y));
@@ -296,8 +309,9 @@ impl NativeLuaEngine {
         let pndn_fn = self.lua.create_function(move |_, ()| {
             let mut state = turtle_state_clone.lock().unwrap();
             let mut output = output_buffer_clone.lock().unwrap();
-            
+
             state.pen_down = true;
+            println!("Pen down called - pen_down state: {}", state.pen_down);
             output.push("Pen down".to_string());
             Ok(())
         })?;
@@ -451,6 +465,7 @@ impl NativeLuaEngine {
             let mut commands = draw_commands_clone.lock().unwrap();
             let state = turtle_state_clone.lock().unwrap();
 
+            println!("Turtle crcl called with x: {}, y: {}, radius: {}", x, y, radius);
             output.push(format!("Circle at ({:.2}, {:.2}) with radius {:.2}", x, y, radius));
 
             // Add draw command for circle
@@ -465,6 +480,7 @@ impl NativeLuaEngine {
                 size: state.pen_size,
                 text: String::new(),
             });
+            println!("Added circle draw command, total commands: {}", commands.len());
             Ok(())
         })?;
         globals.set("crcl", crcl_fn)?;
@@ -544,6 +560,65 @@ impl NativeLuaEngine {
             Ok(())
         })?;
         globals.set("wait", wait_fn)?;
+
+        // pixl function (draw pixel)
+        let output_buffer_clone = Arc::clone(&output_buffer);
+        let draw_commands_clone = Arc::clone(&draw_commands);
+        let turtle_state_clone = Arc::clone(&turtle_state);
+        let pixl_fn = self.lua.create_function(move |_, (x, y): (f64, f64)| {
+            let mut output = output_buffer_clone.lock().unwrap();
+            let mut commands = draw_commands_clone.lock().unwrap();
+            let state = turtle_state_clone.lock().unwrap();
+
+            output.push(format!("Pixel at ({:.2}, {:.2})", x, y));
+
+            // Add draw command for a small circle to represent a pixel
+            commands.push(DrawCommand {
+                command_type: "circle".to_string(),
+                x1: state.x + x,
+                y1: state.y + y,
+                x2: 0.0,
+                y2: 0.0,
+                radius: 1.0, // Small radius for pixel
+                color: state.pen_color.clone(),
+                size: state.pen_size,
+                text: String::new(),
+            });
+            Ok(())
+        })?;
+        globals.set("pixl", pixl_fn)?;
+
+        // rand function (random number)
+        let rand_fn = self.lua.create_function(move |_, max: Option<f64>| {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            use std::time::{SystemTime, UNIX_EPOCH};
+
+            let mut hasher = DefaultHasher::new();
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos().hash(&mut hasher);
+            let hash = hasher.finish();
+
+            let max_val = max.unwrap_or(1.0);
+            let random_val = (hash as f64 / u64::MAX as f64) * max_val;
+            Ok(random_val)
+        })?;
+        globals.set("rand", rand_fn)?;
+
+        // ranc function (random color)
+        let ranc_fn = self.lua.create_function(move |_, ()| {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            use std::time::{SystemTime, UNIX_EPOCH};
+
+            let mut hasher = DefaultHasher::new();
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos().hash(&mut hasher);
+            let hash = hasher.finish();
+
+            let colors = ["red", "green", "blue", "yellow", "purple", "orange", "pink", "cyan"];
+            let index = (hash as usize) % colors.len();
+            Ok(colors[index].to_string())
+        })?;
+        globals.set("ranc", ranc_fn)?;
 
         Ok(())
     }
@@ -738,11 +813,42 @@ impl NativeLuaEngine {
         self.output_buffer.lock().unwrap().clear();
         self.draw_commands.lock().unwrap().clear();
 
+        println!("Executing Lua script (length: {})", script.len());
+        println!("Script content preview: {}", &script[..std::cmp::min(200, script.len())]);
+
         // Execute the script
         match self.lua.load(script).exec() {
             Ok(_) => {
-                let output = self.output_buffer.lock().unwrap().join("\n");
+                let mut output = self.output_buffer.lock().unwrap().join("\n");
                 let draw_commands = self.draw_commands.lock().unwrap().clone();
+                println!("Script execution completed successfully. Output lines: {}, Draw commands: {}",
+                    self.output_buffer.lock().unwrap().len(), draw_commands.len());
+
+                // Debug: Check if modelMain function exists in global scope
+                let model_main_status = match self.lua.globals().get::<_, mlua::Function>("modelMain") {
+                    Ok(_) => {
+                        println!("modelMain function found in global scope");
+                        "modelMain function found in global scope"
+                    },
+                    Err(_) => {
+                        println!("modelMain function NOT found in global scope");
+                        "modelMain function NOT found in global scope"
+                    }
+                };
+
+                // Add debug info to output so it's visible in the frontend
+                if !output.is_empty() {
+                    output.push_str("\n");
+                }
+                output.push_str(&format!("DEBUG: {}", model_main_status));
+                output.push_str(&format!("\nDEBUG: Script execution time: {}ms", start_time.elapsed().as_millis()));
+                output.push_str(&format!("\nDEBUG: Draw commands generated: {}", draw_commands.len()));
+
+                // Debug: Print each draw command
+                for (i, cmd) in draw_commands.iter().enumerate() {
+                    println!("Draw command {}: {:?}", i, cmd);
+                }
+
                 LuaExecutionResult {
                     success: true,
                     output,
@@ -752,6 +858,7 @@ impl NativeLuaEngine {
                 }
             }
             Err(err) => {
+                println!("Script execution failed: {}", err);
                 LuaExecutionResult {
                     success: false,
                     output: String::new(),
