@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use configparser::ini::Ini;
 use encoding_rs::{UTF_8, WINDOWS_1252, WINDOWS_1254, ISO_8859_2};
 
+mod lua_engine;
+use lua_engine::{NativeLuaEngine, LuaExecutionResult};
+
 #[derive(Debug, Serialize, Deserialize)]
 struct AppSettings {
     model_library_path: Option<String>,
@@ -439,6 +442,63 @@ fn get_lua_library_path(model_library_path: String) -> Result<String, String> {
         .to_string())
 }
 
+
+
+
+
+#[tauri::command]
+async fn execute_lua_script(
+    script_content: String,
+    lua_library_path: String,
+    debug_mode: bool,
+) -> Result<LuaExecutionResult, String> {
+    // Create a new native Lua engine instance with library path
+    let engine = NativeLuaEngine::new_with_library_path(Some(lua_library_path.clone()))
+        .map_err(|e| format!("Failed to create Lua engine: {}", e))?;
+
+    // Prepare the script content with library includes if needed
+    let mut full_script = String::new();
+
+    // Include AdekoLib if available (for compatibility, though it's now built-in)
+    let adeko_lib_path = Path::new(&lua_library_path).join("ADekoLib.lua");
+    if adeko_lib_path.exists() {
+        // Read and include the external AdekoLib if it exists
+        if let Ok(lib_content) = fs::read_to_string(&adeko_lib_path) {
+            full_script.push_str("-- External ADekoLib.lua\n");
+            full_script.push_str(&lib_content);
+            full_script.push_str("\n");
+        }
+    }
+
+    // Include turtle graphics if available (for compatibility, though it's now built-in)
+    let turtle_lib_path = Path::new(&lua_library_path).join("turtle.lua");
+    if turtle_lib_path.exists() {
+        if let Ok(turtle_content) = fs::read_to_string(&turtle_lib_path) {
+            full_script.push_str("-- External turtle.lua\n");
+            full_script.push_str(&turtle_content);
+            full_script.push_str("\n");
+        }
+        // Open turtle graphics window
+        full_script.push_str("open('Lua Debug - Turtle Graphics')\n");
+    }
+
+    // Don't include AdekoDebugMode.lua directly since it contains executable code
+    // Instead, let the custom require function handle it when needed
+
+    // Add the user script
+    full_script.push_str("\n-- User Script:\n");
+    full_script.push_str(&script_content);
+
+    // Execute the script using the native Lua engine
+    Ok(engine.execute_script(&full_script))
+}
+
+#[tauri::command]
+fn check_lua_availability() -> Result<bool, String> {
+    // With embedded Lua via mlua, Lua is always available
+    Ok(true)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -457,7 +517,9 @@ fn main() {
             get_directory_tree,
             load_settings,
             save_settings,
-            get_lua_library_path
+            get_lua_library_path,
+            execute_lua_script,
+            check_lua_availability
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -151,6 +151,48 @@
       </div>
     </div>
 
+    <!-- Debug Menu -->
+    <div class="relative" ref="debugMenuRef">
+      <button
+        @click="toggleMenu('debug')"
+        @keydown="handleMenuKeydown('debug', $event)"
+        class="px-3 py-1 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+        :class="{ 'bg-gray-100': activeMenu === 'debug' }"
+      >
+        {{ $t('menu.debug') }}
+      </button>
+      <div
+        v-if="activeMenu === 'debug'"
+        class="absolute top-full left-0 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50 min-w-48"
+      >
+        <button @click="$emit('run-script')" class="menu-item" :disabled="!hasOpenFile">
+          <Play :size="16" />
+          <span>{{ $t('debugMenu.runScript') }}</span>
+          <span class="shortcut">F5</span>
+        </button>
+        <button @click="$emit('run-with-debug')" class="menu-item" :disabled="!hasOpenFile">
+          <Bug :size="16" />
+          <span>{{ $t('debugMenu.runWithDebug') }}</span>
+          <span class="shortcut">Shift+F5</span>
+        </button>
+        <button @click="$emit('stop-execution')" class="menu-item">
+          <Square :size="16" />
+          <span>{{ $t('debugMenu.stopExecution') }}</span>
+          <span class="shortcut">Ctrl+F5</span>
+        </button>
+        <div class="border-t border-gray-200 my-1"></div>
+        <button @click="$emit('toggle-debug-console')" class="menu-item">
+          <Terminal :size="16" />
+          <span>{{ $t('debugMenu.toggleConsole') }}</span>
+          <span class="shortcut">Ctrl+`</span>
+        </button>
+        <button @click="$emit('clear-debug-console')" class="menu-item">
+          <Trash2 :size="16" />
+          <span>{{ $t('debugMenu.clearConsole') }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Tools Menu -->
     <div class="relative" ref="toolsMenuRef">
       <button
@@ -236,7 +278,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import {
   FileText, FolderOpen, Save, Clock, X, Undo, Redo, Scissors, Copy, Clipboard,
   MousePointer, Search, Replace, PanelLeft, Code, ZoomIn, ZoomOut, RotateCcw,
-  Settings, Library, CheckCircle, AlignLeft, BookOpen, Keyboard, Info
+  Settings, Library, CheckCircle, AlignLeft, BookOpen, Keyboard, Info,
+  Play, Bug, Square, Terminal, Trash2
 } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
 
@@ -272,6 +315,11 @@ defineEmits<{
   'zoom-in': []
   'zoom-out': []
   'reset-zoom': []
+  'run-script': []
+  'run-with-debug': []
+  'stop-execution': []
+  'toggle-debug-console': []
+  'clear-debug-console': []
   'toggle-settings': []
   'show-function-browser': []
   'validate-lua': []
@@ -285,6 +333,7 @@ const activeMenu = ref<string | null>(null)
 const fileMenuRef = ref<HTMLElement>()
 const editMenuRef = ref<HTMLElement>()
 const viewMenuRef = ref<HTMLElement>()
+const debugMenuRef = ref<HTMLElement>()
 const toolsMenuRef = ref<HTMLElement>()
 const helpMenuRef = ref<HTMLElement>()
 
@@ -307,8 +356,8 @@ const handleMenuKeydown = (menu: string, event: KeyboardEvent) => {
 
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement
-  const menuRefs = [fileMenuRef.value, editMenuRef.value, viewMenuRef.value, toolsMenuRef.value, helpMenuRef.value]
-  
+  const menuRefs = [fileMenuRef.value, editMenuRef.value, viewMenuRef.value, debugMenuRef.value, toolsMenuRef.value, helpMenuRef.value]
+
   if (!menuRefs.some(ref => ref?.contains(target))) {
     closeMenu()
   }

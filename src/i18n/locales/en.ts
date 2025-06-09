@@ -13,6 +13,7 @@ export default {
     file: 'File',
     edit: 'Edit',
     view: 'View',
+    debug: 'Debug',
     tools: 'Tools',
     help: 'Help'
   },
@@ -52,6 +53,15 @@ export default {
     fullscreen: 'Toggle Fullscreen'
   },
 
+  // Debug menu
+  debugMenu: {
+    runScript: 'Run Script',
+    runWithDebug: 'Run with Debug Mode',
+    stopExecution: 'Stop Execution',
+    clearConsole: 'Clear Console',
+    toggleConsole: 'Toggle Debug Console'
+  },
+
   // Tools menu
   toolsMenu: {
     settings: 'Settings',
@@ -69,15 +79,7 @@ export default {
     reportIssue: 'Report Issue'
   },
 
-  // Toolbar actions (keeping for backward compatibility)
-  toolbar: {
-    new: 'New',
-    open: 'Open',
-    save: 'Save',
-    saveAs: 'Save As',
-    settings: 'Settings',
-    help: 'Help'
-  },
+
 
   // Navigation tabs
   tabs: {
@@ -187,6 +189,32 @@ export default {
   languages: {
     en: 'English',
     tr: 'Türkçe'
+  },
+
+  // Debug console
+  debugConsole: {
+    title: 'Debug Console',
+    running: 'Running script...',
+    completed: 'Script execution completed',
+    failed: 'Script execution failed',
+    stopped: 'Script execution stopped',
+    executionTime: 'Execution time: {time}ms',
+    noOutput: 'No output',
+    clearConsole: 'Clear Console',
+    copyOutput: 'Copy Output',
+    saveOutput: 'Save Output to File'
+  },
+
+  // Toolbar
+  toolbar: {
+    fileOpen: 'File Open',
+    noFile: 'No File',
+    new: 'New',
+    open: 'Open',
+    save: 'Save',
+    saveAs: 'Save As',
+    settings: 'Settings',
+    help: 'Help'
   },
 
   // Common UI elements

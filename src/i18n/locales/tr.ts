@@ -13,6 +13,7 @@ export default {
     file: 'Dosya',
     edit: 'Düzenle',
     view: 'Görünüm',
+    debug: 'Hata Ayıklama',
     tools: 'Araçlar',
     help: 'Yardım'
   },
@@ -52,6 +53,15 @@ export default {
     fullscreen: 'Tam Ekranı Aç/Kapat'
   },
 
+  // Hata ayıklama menüsü
+  debugMenu: {
+    runScript: 'Betiği Çalıştır',
+    runWithDebug: 'Hata Ayıklama Modunda Çalıştır',
+    stopExecution: 'Çalıştırmayı Durdur',
+    clearConsole: 'Konsolu Temizle',
+    toggleConsole: 'Hata Ayıklama Konsolunu Aç/Kapat'
+  },
+
   // Araçlar menüsü
   toolsMenu: {
     settings: 'Ayarlar',
@@ -69,15 +79,7 @@ export default {
     reportIssue: 'Sorun Bildir'
   },
 
-  // Araç çubuğu eylemleri (geriye dönük uyumluluk için)
-  toolbar: {
-    new: 'Yeni',
-    open: 'Aç',
-    save: 'Kaydet',
-    saveAs: 'Farklı Kaydet',
-    settings: 'Ayarlar',
-    help: 'Yardım'
-  },
+
 
   // Navigasyon sekmeleri
   tabs: {
@@ -187,6 +189,32 @@ export default {
   languages: {
     en: 'English',
     tr: 'Türkçe'
+  },
+
+  // Hata ayıklama konsolu
+  debugConsole: {
+    title: 'Hata Ayıklama Konsolu',
+    running: 'Betik çalıştırılıyor...',
+    completed: 'Betik çalıştırma tamamlandı',
+    failed: 'Betik çalıştırma başarısız',
+    stopped: 'Betik çalıştırma durduruldu',
+    executionTime: 'Çalıştırma süresi: {time}ms',
+    noOutput: 'Çıktı yok',
+    clearConsole: 'Konsolu Temizle',
+    copyOutput: 'Çıktıyı Kopyala',
+    saveOutput: 'Çıktıyı Dosyaya Kaydet'
+  },
+
+  // Araç çubuğu
+  toolbar: {
+    fileOpen: 'Dosya Açık',
+    noFile: 'Dosya Yok',
+    new: 'Yeni',
+    open: 'Aç',
+    save: 'Kaydet',
+    saveAs: 'Farklı Kaydet',
+    settings: 'Ayarlar',
+    help: 'Yardım'
   },
 
   // Ortak UI öğeleri

@@ -19,6 +19,11 @@ export interface KeyboardShortcutActions {
   'zoom-in': () => void
   'zoom-out': () => void
   'reset-zoom': () => void
+  'run-script': () => void
+  'run-with-debug': () => void
+  'stop-execution': () => void
+  'toggle-debug-console': () => void
+  'clear-debug-console': () => void
   'toggle-settings': () => void
   'show-function-browser': () => void
   'validate-lua': () => void
@@ -52,6 +57,12 @@ const shortcuts: KeyboardShortcut[] = [
   { key: '=', ctrlKey: true, description: 'Zoom In', action: 'zoom-in', category: 'View' },
   { key: '-', ctrlKey: true, description: 'Zoom Out', action: 'zoom-out', category: 'View' },
   { key: '0', ctrlKey: true, description: 'Reset Zoom', action: 'reset-zoom', category: 'View' },
+
+  // Debug operations
+  { key: 'F5', description: 'Run Script', action: 'run-script', category: 'Debug' },
+  { key: 'F5', shiftKey: true, description: 'Run with Debug Mode', action: 'run-with-debug', category: 'Debug' },
+  { key: 'F5', ctrlKey: true, description: 'Stop Execution', action: 'stop-execution', category: 'Debug' },
+  { key: '`', ctrlKey: true, description: 'Toggle Debug Console', action: 'toggle-debug-console', category: 'Debug' },
 
   // Tools operations
   { key: ',', ctrlKey: true, description: 'Settings', action: 'toggle-settings', category: 'Tools' },
@@ -92,7 +103,7 @@ export function useKeyboardShortcuts() {
     const target = event.target as HTMLElement
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
       // Only allow certain global shortcuts in input fields
-      const globalShortcuts = ['F1', 'F2', 'F7']
+      const globalShortcuts = ['F1', 'F2', 'F5', 'F7']
       if (!globalShortcuts.includes(event.key)) {
         return
       }

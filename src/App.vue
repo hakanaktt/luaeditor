@@ -20,6 +20,11 @@
       @zoom-in="handleZoomIn"
       @zoom-out="handleZoomOut"
       @reset-zoom="handleResetZoom"
+      @run-script="handleRunScript"
+      @run-with-debug="handleRunWithDebug"
+      @stop-execution="handleStopExecution"
+      @toggle-debug-console="handleToggleDebugConsole"
+      @clear-debug-console="handleClearDebugConsole"
       @toggle-settings="showSettingsModal = true"
       @show-function-browser="handleShowFunctionBrowser"
       @validate-lua="handleValidateLua"
@@ -27,6 +32,25 @@
       @show-documentation="handleShowDocumentation"
       @show-keyboard-shortcuts="handleShowKeyboardShortcuts"
       @show-about="handleShowAbout"
+    />
+
+    <Toolbar
+      :has-open-file="!!currentFile"
+      :zoom-level="zoomLevel"
+      :current-file-name="currentFileName"
+      @new-file="handleNewFile"
+      @open-file="handleOpenFile"
+      @save-file="handleSaveFile"
+      @undo="handleUndo"
+      @redo="handleRedo"
+      @run-script="handleRunScript"
+      @run-with-debug="handleRunWithDebug"
+      @stop-execution="handleStopExecution"
+      @toggle-sidebar="handleToggleSidebar"
+      @toggle-debug-console="handleToggleDebugConsole"
+      @show-function-browser="handleShowFunctionBrowser"
+      @zoom-in="handleZoomIn"
+      @zoom-out="handleZoomOut"
     />
     
     <!-- Main Content Area -->
@@ -81,19 +105,29 @@
 
       <!-- Editor Area -->
       <div class="flex-1 flex flex-col">
-        <Editor
-          v-if="currentFile"
-          ref="editorRef"
-          :file-content="currentFileContent"
-          :file-path="currentFile"
-          @content-changed="handleContentChanged"
-        />
-        <div v-else class="flex-1 flex items-center justify-center text-gray-500">
-          <div class="text-center">
-            <h2 class="text-xl mb-2">{{ $t('app.welcome') }}</h2>
-            <p>{{ $t('app.welcomeMessage') }}</p>
+        <div class="flex-1 flex flex-col">
+          <Editor
+            v-if="currentFile"
+            ref="editorRef"
+            :file-content="currentFileContent"
+            :file-path="currentFile"
+            @content-changed="handleContentChanged"
+          />
+          <div v-else class="flex-1 flex items-center justify-center text-gray-500">
+            <div class="text-center">
+              <h2 class="text-xl mb-2">{{ $t('app.welcome') }}</h2>
+              <p>{{ $t('app.welcomeMessage') }}</p>
+            </div>
           </div>
         </div>
+
+        <!-- Debug Console -->
+        <DebugConsole
+          v-if="showDebugConsole"
+          ref="debugConsoleRef"
+          :is-visible="showDebugConsole"
+          @toggle-visibility="handleToggleDebugConsole"
+        />
       </div>
     </div>
 
@@ -120,6 +154,9 @@
         <span>{{ $t('status.luaMacroEditor') }}</span>
       </div>
     </div>
+
+    <!-- Notification System -->
+    <NotificationSystem ref="notificationSystemRef" />
   </div>
 </template>
 
@@ -128,17 +165,22 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
 import MenuBar from './components/MenuBar.vue'
+import Toolbar from './components/Toolbar.vue'
 import FileExplorer from './components/FileExplorer.vue'
 import Editor from './components/Editor.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import FunctionBrowser from './components/FunctionBrowser.vue'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal.vue'
+import DebugConsole from './components/DebugConsole.vue'
+import NotificationSystem from './components/NotificationSystem.vue'
 import { useI18n } from '@/composables/useI18n'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useNotifications } from '@/composables/useNotifications'
 import type { AppSettings } from './types'
 
 const { t, changeLanguage } = useI18n()
 const { registerActions } = useKeyboardShortcuts()
+const notifications = useNotifications()
 
 const currentDirectory = ref<string>('')
 const currentFile = ref<string | null>(null)
@@ -146,8 +188,12 @@ const currentFileContent = ref<string>('')
 const isModified = ref<boolean>(false)
 const showSettingsModal = ref<boolean>(false)
 const showKeyboardShortcutsModal = ref<boolean>(false)
+const showDebugConsole = ref<boolean>(false)
 const activeTab = ref<'files' | 'functions'>('files')
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
+const debugConsoleRef = ref<InstanceType<typeof DebugConsole> | null>(null)
+const zoomLevel = ref<number>(100)
+const currentFileName = ref<string>('')
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary',
   language: 'en',
@@ -164,8 +210,10 @@ const maxSidebarWidth = 600
 
 const handleNewFile = (): void => {
   currentFile.value = null
+  currentFileName.value = ''
   currentFileContent.value = t('files.newFileComment')
   isModified.value = true
+  notifications.info('New file created', 'File Operation')
 }
 
 const handleOpenFile = async (): Promise<void> => {
@@ -177,15 +225,18 @@ const handleOpenFile = async (): Promise<void> => {
         extensions: ['lua']
       }]
     })
-    
+
     if (selected) {
       const content = await invoke<string>('read_file', { path: selected })
       currentFile.value = selected as string
+      currentFileName.value = selected.split(/[/\\]/).pop() || ''
       currentFileContent.value = content
       isModified.value = false
+      notifications.fileOpened(currentFileName.value)
     }
   } catch (error) {
     console.error(t('errors.openingFile'), error)
+    notifications.error('Failed to open file', 'File Operation', String(error))
   }
 }
 
@@ -194,15 +245,17 @@ const handleSaveFile = async (): Promise<void> => {
     await handleSaveAs()
     return
   }
-  
+
   try {
-    await invoke('write_file', { 
-      path: currentFile.value, 
-      content: currentFileContent.value 
+    await invoke('write_file', {
+      path: currentFile.value,
+      content: currentFileContent.value
     })
     isModified.value = false
+    notifications.fileSaved(currentFileName.value || currentFile.value)
   } catch (error) {
     console.error(t('errors.savingFile'), error)
+    notifications.error('Failed to save file', 'File Operation', String(error))
   }
 }
 
@@ -322,18 +375,21 @@ const handleToggleFunctionBrowser = (): void => {
 const handleZoomIn = (): void => {
   if (editorRef.value) {
     editorRef.value.zoomIn()
+    zoomLevel.value = Math.min(zoomLevel.value + 10, 300)
   }
 }
 
 const handleZoomOut = (): void => {
   if (editorRef.value) {
     editorRef.value.zoomOut()
+    zoomLevel.value = Math.max(zoomLevel.value - 10, 50)
   }
 }
 
 const handleResetZoom = (): void => {
   if (editorRef.value) {
     editorRef.value.resetZoom()
+    zoomLevel.value = 100
   }
 }
 
@@ -364,6 +420,144 @@ const handleShowKeyboardShortcuts = (): void => {
 const handleShowAbout = (): void => {
   // TODO: Implement about modal
   console.log('Show about')
+}
+
+// Debug handlers
+const handleRunScript = async (): Promise<void> => {
+  if (!currentFile.value || !currentFileContent.value) {
+    notifications.warning('No file open to execute', 'Script Execution')
+    return
+  }
+
+  showDebugConsole.value = true
+  notifications.scriptExecutionStarted(currentFileName.value || currentFile.value)
+
+  if (debugConsoleRef.value) {
+    debugConsoleRef.value.setExecuting(true)
+    debugConsoleRef.value.addOutput('info', `Running script: ${currentFile.value}`)
+  }
+
+  try {
+    const { executeLuaScript } = await import('@/utils/luaExecutor')
+
+    const result = await executeLuaScript({
+      scriptContent: currentFileContent.value,
+      luaLibraryPath: luaLibraryPath.value,
+      debugMode: false
+    })
+
+    if (debugConsoleRef.value) {
+      debugConsoleRef.value.setExecuting(false)
+      debugConsoleRef.value.setExecutionTime(result.execution_time_ms)
+
+      if (result.success) {
+        debugConsoleRef.value.addOutput('success', t('debugConsole.completed'))
+        if (result.output) {
+          debugConsoleRef.value.addOutput('info', result.output)
+        }
+        notifications.scriptExecutionCompleted(
+          currentFileName.value || currentFile.value,
+          result.execution_time_ms
+        )
+      } else {
+        debugConsoleRef.value.addOutput('error', t('debugConsole.failed'))
+        if (result.error) {
+          debugConsoleRef.value.addOutput('error', result.error)
+        }
+        notifications.scriptExecutionFailed(
+          currentFileName.value || currentFile.value,
+          result.error
+        )
+      }
+    }
+  } catch (error) {
+    if (debugConsoleRef.value) {
+      debugConsoleRef.value.setExecuting(false)
+      debugConsoleRef.value.addOutput('error', `${t('debugConsole.failed')}: ${error}`)
+    }
+    notifications.scriptExecutionFailed(
+      currentFileName.value || currentFile.value,
+      String(error)
+    )
+  }
+}
+
+const handleRunWithDebug = async (): Promise<void> => {
+  if (!currentFile.value || !currentFileContent.value) {
+    notifications.warning('No file open to execute', 'Script Execution')
+    return
+  }
+
+  showDebugConsole.value = true
+  notifications.debugModeEnabled()
+  notifications.scriptExecutionStarted(currentFileName.value || currentFile.value)
+
+  if (debugConsoleRef.value) {
+    debugConsoleRef.value.setExecuting(true)
+    debugConsoleRef.value.addOutput('info', `Running script with debug mode: ${currentFile.value}`)
+  }
+
+  try {
+    const { executeLuaScript } = await import('@/utils/luaExecutor')
+
+    const result = await executeLuaScript({
+      scriptContent: currentFileContent.value,
+      luaLibraryPath: luaLibraryPath.value,
+      debugMode: true
+    })
+
+    if (debugConsoleRef.value) {
+      debugConsoleRef.value.setExecuting(false)
+      debugConsoleRef.value.setExecutionTime(result.execution_time_ms)
+
+      if (result.success) {
+        debugConsoleRef.value.addOutput('success', t('debugConsole.completed'))
+        if (result.output) {
+          debugConsoleRef.value.addOutput('info', result.output)
+        }
+        notifications.scriptExecutionCompleted(
+          currentFileName.value || currentFile.value,
+          result.execution_time_ms
+        )
+      } else {
+        debugConsoleRef.value.addOutput('error', t('debugConsole.failed'))
+        if (result.error) {
+          debugConsoleRef.value.addOutput('error', result.error)
+        }
+        notifications.scriptExecutionFailed(
+          currentFileName.value || currentFile.value,
+          result.error
+        )
+      }
+    }
+  } catch (error) {
+    if (debugConsoleRef.value) {
+      debugConsoleRef.value.setExecuting(false)
+      debugConsoleRef.value.addOutput('error', `${t('debugConsole.failed')}: ${error}`)
+    }
+    notifications.scriptExecutionFailed(
+      currentFileName.value || currentFile.value,
+      String(error)
+    )
+  }
+}
+
+const handleStopExecution = (): void => {
+  // TODO: Implement script execution stopping
+  if (debugConsoleRef.value) {
+    debugConsoleRef.value.setExecuting(false)
+    debugConsoleRef.value.addOutput('info', t('debugConsole.stopped'))
+  }
+}
+
+const handleToggleDebugConsole = (): void => {
+  showDebugConsole.value = !showDebugConsole.value
+}
+
+const handleClearDebugConsole = (): void => {
+  if (debugConsoleRef.value) {
+    debugConsoleRef.value.clearConsole()
+  }
 }
 
 // Sidebar resize methods
@@ -502,6 +696,11 @@ onMounted(async () => {
     'zoom-in': handleZoomIn,
     'zoom-out': handleZoomOut,
     'reset-zoom': handleResetZoom,
+    'run-script': handleRunScript,
+    'run-with-debug': handleRunWithDebug,
+    'stop-execution': handleStopExecution,
+    'toggle-debug-console': handleToggleDebugConsole,
+    'clear-debug-console': handleClearDebugConsole,
     'toggle-settings': () => { showSettingsModal.value = true },
     'show-function-browser': handleShowFunctionBrowser,
     'validate-lua': handleValidateLua,
