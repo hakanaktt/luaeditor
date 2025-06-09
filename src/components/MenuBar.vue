@@ -211,7 +211,7 @@
         <button @click="$emit('show-keyboard-shortcuts')" class="menu-item">
           <Keyboard :size="16" />
           <span>{{ $t('helpMenu.keyboardShortcuts') }}</span>
-          <span class="shortcut">Ctrl+?</span>
+          <span class="shortcut">F12</span>
         </button>
         <div class="border-t border-gray-200 my-1"></div>
         <button @click="$emit('show-about')" class="menu-item">
@@ -240,7 +240,7 @@ import {
 } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
 
-const { t } = useI18n()
+const { t: _t } = useI18n()
 
 interface Props {
   hasOpenFile?: boolean
@@ -249,6 +249,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   hasOpenFile: false
 })
+
+// Explicitly reference variables to avoid TypeScript warnings
+const { hasOpenFile } = props
 
 // Define emits
 defineEmits<{

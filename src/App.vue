@@ -105,6 +105,12 @@
       @settings-updated="handleSettingsUpdated"
     />
 
+    <!-- Keyboard Shortcuts Modal -->
+    <KeyboardShortcutsModal
+      :is-visible="showKeyboardShortcutsModal"
+      @close="showKeyboardShortcutsModal = false"
+    />
+
     <!-- Status Bar -->
     <div class="h-6 bg-blue-600 text-white text-xs flex items-center px-2">
       <span v-if="currentFile">{{ currentFile }}</span>
@@ -126,16 +132,20 @@ import FileExplorer from './components/FileExplorer.vue'
 import Editor from './components/Editor.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import FunctionBrowser from './components/FunctionBrowser.vue'
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal.vue'
 import { useI18n } from '@/composables/useI18n'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import type { AppSettings } from './types'
 
 const { t, changeLanguage } = useI18n()
+const { registerActions } = useKeyboardShortcuts()
 
 const currentDirectory = ref<string>('')
 const currentFile = ref<string | null>(null)
 const currentFileContent = ref<string>('')
 const isModified = ref<boolean>(false)
 const showSettingsModal = ref<boolean>(false)
+const showKeyboardShortcutsModal = ref<boolean>(false)
 const activeTab = ref<'files' | 'functions'>('files')
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const appSettings = ref<AppSettings>({
@@ -348,8 +358,7 @@ const handleShowDocumentation = (): void => {
 }
 
 const handleShowKeyboardShortcuts = (): void => {
-  // TODO: Implement keyboard shortcuts modal
-  console.log('Show keyboard shortcuts')
+  showKeyboardShortcutsModal.value = true
 }
 
 const handleShowAbout = (): void => {
@@ -473,6 +482,33 @@ const loadSettings = async (): Promise<void> => {
 onMounted(async () => {
   console.log(t('status.initialized'))
   await loadSettings()
+
+  // Register keyboard shortcut actions
+  registerActions({
+    'new-file': handleNewFile,
+    'open-file': handleOpenFile,
+    'save-file': handleSaveFile,
+    'save-as': handleSaveAs,
+    'undo': handleUndo,
+    'redo': handleRedo,
+    'cut': handleCut,
+    'copy': handleCopy,
+    'paste': handlePaste,
+    'select-all': handleSelectAll,
+    'find': handleFind,
+    'replace': handleReplace,
+    'toggle-sidebar': handleToggleSidebar,
+    'toggle-function-browser': handleToggleFunctionBrowser,
+    'zoom-in': handleZoomIn,
+    'zoom-out': handleZoomOut,
+    'reset-zoom': handleResetZoom,
+    'toggle-settings': () => { showSettingsModal.value = true },
+    'show-function-browser': handleShowFunctionBrowser,
+    'validate-lua': handleValidateLua,
+    'format-code': handleFormatCode,
+    'show-documentation': handleShowDocumentation,
+    'show-keyboard-shortcuts': handleShowKeyboardShortcuts
+  })
 })
 
 onUnmounted(() => {

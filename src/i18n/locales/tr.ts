@@ -194,6 +194,25 @@ export default {
     loading: 'Yükleniyor...',
     error: 'Hata',
     directoryNotFound: 'Dizin bulunamadı:',
-    noDirectorySpecified: 'Dizin belirtilmedi'
+    noDirectorySpecified: 'Dizin belirtilmedi',
+    close: 'Kapat'
+  },
+
+  // Klavye kısayolları
+  keyboardShortcuts: {
+    title: 'Klavye Kısayolları',
+    categories: {
+      file: 'Dosya İşlemleri',
+      edit: 'Düzenleme İşlemleri',
+      view: 'Görünüm İşlemleri',
+      tools: 'Araçlar',
+      help: 'Yardım'
+    },
+    tips: {
+      title: 'İpuçları',
+      editorFocus: 'Çoğu kısayol editör odaklandığında çalışır',
+      globalShortcuts: 'Fonksiyon tuşları (F1, F2, F7) global olarak çalışır',
+      menuAccess: 'Bu komutlara menü çubuğundan da erişebilirsiniz'
+    }
   }
 }

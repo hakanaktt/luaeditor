@@ -194,6 +194,25 @@ export default {
     loading: 'Loading...',
     error: 'Error',
     directoryNotFound: 'Directory not found:',
-    noDirectorySpecified: 'No directory specified'
+    noDirectorySpecified: 'No directory specified',
+    close: 'Close'
+  },
+
+  // Keyboard shortcuts
+  keyboardShortcuts: {
+    title: 'Keyboard Shortcuts',
+    categories: {
+      file: 'File Operations',
+      edit: 'Edit Operations',
+      view: 'View Operations',
+      tools: 'Tools',
+      help: 'Help'
+    },
+    tips: {
+      title: 'Tips',
+      editorFocus: 'Most shortcuts work when the editor is focused',
+      globalShortcuts: 'Function keys (F1, F2, F7) work globally',
+      menuAccess: 'You can also access these commands through the menu bar'
+    }
   }
 }

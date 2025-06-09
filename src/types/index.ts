@@ -91,3 +91,20 @@ export interface FunctionFilter {
   tags?: string[]
   searchTerm?: string
 }
+
+// Keyboard shortcuts
+export interface KeyboardShortcut {
+  key: string
+  ctrlKey?: boolean
+  shiftKey?: boolean
+  altKey?: boolean
+  metaKey?: boolean
+  description: string
+  action: string
+  category: string
+}
+
+export interface ShortcutCategory {
+  name: string
+  shortcuts: KeyboardShortcut[]
+}
