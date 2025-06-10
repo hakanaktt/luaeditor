@@ -25,7 +25,7 @@ import * as monaco from 'monaco-editor'
 import { monacoIntelliSenseService } from '../services/monacoIntellisense'
 import { themeService } from '../services/themeService'
 import { colorfulThemeService } from '../services/colorfulThemeService'
-import { setupEnhancedLuaSyntax } from '../services/enhancedLuaSyntax'
+
 
 interface Props {
   fileContent: string
@@ -243,7 +243,9 @@ const initializeEditor = (): void => {
       // Better rendering
       renderLineHighlight: 'all',
       renderControlCharacters: false,
-      renderIndentGuides: true,
+      guides: {
+        indentation: true
+      },
       // Padding
       padding: { top: 10, bottom: 10 }
     })

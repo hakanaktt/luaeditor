@@ -140,11 +140,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Plus, Minus, RotateCcw } from 'lucide-vue-next'
 import { colorfulThemeService } from '../services/colorfulThemeService'
 import { themeService, FONT_FAMILIES, DEFAULT_TEXT_STYLE } from '../services/themeService'
-import type { ColorfulThemeDefinition, TextStyleSettings } from '../services/colorfulThemeService'
+import type { ColorfulThemeDefinition } from '../services/colorfulThemeService'
+import type { TextStyleSettings } from '../services/themeService'
 
 const availableThemes = ref<ColorfulThemeDefinition[]>([])
 const currentTheme = ref<string>('vibrant-dark')

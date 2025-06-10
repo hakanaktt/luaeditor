@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 // Define emits
-const emit = defineEmits<{
+defineEmits<{
   'close-diff': []
 }>()
 
@@ -93,7 +93,10 @@ const initializeDiffEditor = (): void => {
 
     // Apply colorful theme after creation
     setTimeout(() => {
-      colorfulThemeService.applyTheme()
+      const savedTheme = localStorage.getItem('current-editor-theme') || 'vs-dark'
+      if (savedTheme !== 'vs-dark') {
+        colorfulThemeService.applyTheme(savedTheme)
+      }
     }, 100)
 
     console.log('Diff editor initialized successfully')

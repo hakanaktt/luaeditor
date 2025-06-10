@@ -193,12 +193,7 @@ class ColorfulThemeService {
     }
   }
 
-  /**
-   * Remove # from color hex codes for Monaco
-   */
-  private stripHash(color: string): string {
-    return color.startsWith('#') ? color.substring(1) : color
-  }
+
 
   /**
    * Get all available colorful themes

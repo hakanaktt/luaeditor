@@ -63,8 +63,8 @@ import { ref, computed, watch, nextTick } from 'vue'
 import EditorTabs from './EditorTabs.vue'
 import Editor from './Editor.vue'
 import DiffEditor from './DiffEditor.vue'
-import { useI18n } from '@/composables/useI18n'
-import type { EditorGroup as EditorGroupType, EditorFile } from '@/types'
+
+import type { EditorGroup as EditorGroupType } from '@/types'
 
 interface Props {
   group: EditorGroupType
@@ -89,7 +89,7 @@ const emit = defineEmits<{
   'close-diff': [groupId: string]
 }>()
 
-const { t } = useI18n()
+
 
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 
@@ -145,6 +145,10 @@ const handleCloseOthers = (keepFileId: string) => {
 
 const handleCloseModified = () => {
   emit('close-modified', props.group.id)
+}
+
+const handleCloseDiff = () => {
+  emit('close-diff', props.group.id)
 }
 
 const handleContentChanged = (content: string) => {

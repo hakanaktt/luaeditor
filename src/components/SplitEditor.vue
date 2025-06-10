@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick } from 'vue'
+import { ref } from 'vue'
 import EditorGroup from './EditorGroup.vue'
 import { useI18n } from '@/composables/useI18n'
 import type { SplitLayout, EditorGroup as EditorGroupType, EditorFile } from '@/types'
@@ -91,11 +91,7 @@ const groupRefs = ref<Map<string, InstanceType<typeof EditorGroup>>>(new Map())
 const isResizing = ref(false)
 const resizeIndex = ref(0)
 
-const activeFile = computed(() => {
-  const activeGroup = props.layout.groups.find(g => g.id === props.layout.activeGroupId)
-  if (!activeGroup || !activeGroup.activeFileId) return null
-  return activeGroup.files.find(f => f.id === activeGroup.activeFileId) || null
-})
+
 
 const setGroupRef = (groupId: string, el: any) => {
   if (el) {

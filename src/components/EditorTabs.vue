@@ -113,9 +113,9 @@
     
     <!-- Context Menu -->
     <ContextMenu
-      v-if="contextMenu.visible"
+      :visible="contextMenu.visible"
       :position="contextMenu.position"
-      :items="contextMenuItems"
+      :menu-items="contextMenuItems"
       @item-click="handleContextMenuClick"
       @close="contextMenu.visible = false"
     />
@@ -124,7 +124,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { FileText, X, Plus, SplitSquareVertical, MoreHorizontal, Save } from 'lucide-vue-next'
+import { FileText, X, Plus, SplitSquareVertical, MoreHorizontal, Save, Copy, FolderOpen } from 'lucide-vue-next'
 import ContextMenu from './ContextMenu.vue'
 import { useI18n } from '@/composables/useI18n'
 import type { EditorFile } from '@/types'
@@ -159,12 +159,12 @@ const contextMenu = ref({
 })
 
 const contextMenuItems = computed(() => [
-  { id: 'close', label: t('tabs.close'), icon: 'X' },
-  { id: 'close-others', label: t('tabs.closeOthers'), icon: 'X' },
-  { id: 'close-all', label: t('tabs.closeAll'), icon: 'X' },
-  { id: 'separator' },
-  { id: 'copy-path', label: t('tabs.copyPath'), icon: 'Copy' },
-  { id: 'reveal-in-explorer', label: t('tabs.revealInExplorer'), icon: 'FolderOpen' }
+  { id: 'close', label: t('tabs.close'), icon: X },
+  { id: 'close-others', label: t('tabs.closeOthers'), icon: X },
+  { id: 'close-all', label: t('tabs.closeAll'), icon: X },
+  { id: 'separator', type: 'separator' as const },
+  { id: 'copy-path', label: t('tabs.copyPath'), icon: Copy },
+  { id: 'reveal-in-explorer', label: t('tabs.revealInExplorer'), icon: FolderOpen }
 ])
 
 const showContextMenu = (event: MouseEvent, file: EditorFile) => {

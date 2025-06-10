@@ -249,16 +249,12 @@ const notifications = useNotifications()
 const {
   layout: editorLayout,
   activeFile,
-  allFiles,
-  hasModifiedFiles,
   initializeEditor,
   createNewFile,
   openFile,
   updateFileContent,
   updateCursorPosition,
-  saveFile,
-  closeFile,
-  splitEditor
+  saveFile
 } = useEditorState()
 
 const currentDirectory = ref<string>('')
