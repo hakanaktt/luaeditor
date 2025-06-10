@@ -73,9 +73,38 @@
         <button
           @click="$emit('stop-execution')"
           class="toolbar-button toolbar-button-danger"
-          :title="$t('debugMenu.stopExecution') + ' (Ctrl+F5)'"
+          :title="$t('debugMenu.stopExecution')"
         >
           <Square :size="16" />
+        </button>
+      </div>
+
+      <div class="toolbar-separator"></div>
+
+      <!-- Theme and Styling -->
+      <div class="toolbar-group">
+        <button
+          @click="$emit('toggle-theme')"
+          class="toolbar-button"
+          :title="$t('viewMenu.toggleTheme')"
+        >
+          <Palette :size="16" />
+        </button>
+        <button
+          @click="$emit('increase-font-size')"
+          class="toolbar-button"
+          :title="$t('viewMenu.increaseFontSize')"
+        >
+          <Type :size="16" />
+          <Plus :size="12" />
+        </button>
+        <button
+          @click="$emit('decrease-font-size')"
+          class="toolbar-button"
+          :title="$t('viewMenu.decreaseFontSize')"
+        >
+          <Type :size="16" />
+          <Minus :size="12" />
         </button>
       </div>
 
@@ -146,7 +175,7 @@
 <script setup lang="ts">
 import {
   FileText, FolderOpen, Save, Undo, Redo, Play, Bug, Square,
-  PanelLeft, Terminal, Library, ZoomIn, ZoomOut
+  PanelLeft, Terminal, Library, ZoomIn, ZoomOut, Palette, Type, Plus, Minus
 } from 'lucide-vue-next'
 
 interface Props {
@@ -175,6 +204,9 @@ defineEmits<{
   'show-function-browser': []
   'zoom-in': []
   'zoom-out': []
+  'toggle-theme': []
+  'increase-font-size': []
+  'decrease-font-size': []
 }>()
 </script>
 

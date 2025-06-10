@@ -61,7 +61,7 @@ const shortcuts: KeyboardShortcut[] = [
   // Debug operations
   { key: 'F5', description: 'Run Script', action: 'run-script', category: 'Debug' },
   { key: 'F7', description: 'Run with Debug Mode', action: 'run-with-debug', category: 'Debug' },
-  { key: 'F5', ctrlKey: true, description: 'Stop Execution', action: 'stop-execution', category: 'Debug' },
+  // Removed Ctrl+F5 to allow browser hard refresh
   { key: '`', ctrlKey: true, description: 'Toggle Debug Console', action: 'toggle-debug-console', category: 'Debug' },
 
   // Tools operations

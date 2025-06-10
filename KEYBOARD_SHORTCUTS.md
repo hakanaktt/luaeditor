@@ -33,10 +33,15 @@ The Lua Macro Editor now supports comprehensive keyboard shortcuts to improve pr
 - `Ctrl+-` - Zoom Out
 - `Ctrl+0` - Reset Zoom
 
+### Debug Operations
+- `F5` - Run Script
+- `F7` - Run with Debug Mode
+- `Ctrl+\`` - Toggle Debug Console
+
 ### Tools
 - `Ctrl+,` - Settings
 - `F2` - Function Browser
-- `F7` - Validate Lua
+- `F8` - Validate Lua
 - `Shift+Alt+F` - Format Code
 
 ### Help

@@ -178,7 +178,6 @@
         <button @click="$emit('stop-execution')" class="menu-item">
           <Square :size="16" />
           <span>{{ $t('debugMenu.stopExecution') }}</span>
-          <span class="shortcut">Ctrl+F5</span>
         </button>
         <div class="border-t border-gray-200 my-1"></div>
         <button @click="$emit('toggle-debug-console')" class="menu-item">

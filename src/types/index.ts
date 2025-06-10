@@ -11,9 +11,12 @@ export interface FileItem {
 
 export interface EditorSettings {
   fontSize: number
-  theme: 'vs-dark' | 'vs-light'
+  theme: 'vs' | 'vs-dark' | 'hc-black' | 'hc-light'
   wordWrap: boolean
   minimap: boolean
+  fontFamily: string
+  lineHeight: number
+  letterSpacing: number
 }
 
 export interface AdekoFunction {

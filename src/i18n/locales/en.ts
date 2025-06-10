@@ -50,6 +50,9 @@ export default {
     zoomIn: 'Zoom In',
     zoomOut: 'Zoom Out',
     resetZoom: 'Reset Zoom',
+    toggleTheme: 'Toggle Theme',
+    increaseFontSize: 'Increase Font Size',
+    decreaseFontSize: 'Decrease Font Size',
     fullscreen: 'Toggle Fullscreen'
   },
 
@@ -159,6 +162,8 @@ export default {
     notAvailable: 'Not available',
     autoDetectionNote: 'The Lua library will be automatically detected as a sibling folder to the model library.',
     language: 'Language',
+    editorTheme: 'Editor Theme',
+    themeNote: 'Choose a color theme for the code editor',
     sidebarWidth: 'Sidebar Width',
     sidebarWidthNote: 'Adjust the width of the sidebar panel (200-600px). You can also drag the sidebar edge to resize.',
     cancel: 'Cancel',

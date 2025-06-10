@@ -23,6 +23,9 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { FileText } from 'lucide-vue-next'
 import * as monaco from 'monaco-editor'
 import { monacoIntelliSenseService } from '../services/monacoIntellisense'
+import { themeService } from '../services/themeService'
+import { colorfulThemeService } from '../services/colorfulThemeService'
+import { setupEnhancedLuaSyntax } from '../services/enhancedLuaSyntax'
 
 interface Props {
   fileContent: string
@@ -62,8 +65,8 @@ const initializeEditor = (): void => {
 
   // Configure Lua language support
   monaco.languages.register({ id: 'lua' })
-  
-  // Set Lua language configuration
+
+  // Setup basic Lua syntax highlighting (fallback to working version)
   monaco.languages.setLanguageConfiguration('lua', {
     comments: {
       lineComment: '--',
@@ -80,54 +83,95 @@ const initializeEditor = (): void => {
       { open: '(', close: ')' },
       { open: '"', close: '"' },
       { open: "'", close: "'" }
-    ],
-    surroundingPairs: [
-      { open: '{', close: '}' },
-      { open: '[', close: ']' },
-      { open: '(', close: ')' },
-      { open: '"', close: '"' },
-      { open: "'", close: "'" }
     ]
   })
 
-  // Set Lua syntax highlighting
+  // Simple but reliable Lua tokenizer
   monaco.languages.setMonarchTokensProvider('lua', {
-    keywords: [
-      'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
-      'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat',
-      'return', 'then', 'true', 'until', 'while'
-    ],
-    
-    operators: [
-      '=', '>', '<', '!', '~', '?', ':', '==', '<=', '>=', '!=',
-      '&&', '||', '++', '--', '+', '-', '*', '/', '&', '|', '^', '%',
-      '<<', '>>', '>>>', '+=', '-=', '*=', '/=', '&=', '|=', '^=',
-      '%=', '<<=', '>>=', '>>>='
-    ],
-
-    symbols: /[=><!~?:&|+\-*/^%]+/,
+    defaultToken: 'identifier',
 
     tokenizer: {
       root: [
-        [/[a-zA-Z_]\w*/, {
-          cases: {
-            '@keywords': 'keyword',
-            '@default': 'identifier'
-          }
-        }],
-        [/\d+(\.\d+)?/, 'number'],
+        // Comments
+        [/--\[\[/, 'comment', '@comment_multiline'],
+        [/--.*$/, 'comment'],
+
+        // Strings
         [/"([^"\\]|\\.)*$/, 'string.invalid'],
         [/"/, 'string', '@string_double'],
         [/'([^'\\]|\\.)*$/, 'string.invalid'],
         [/'/, 'string', '@string_single'],
-        [/--\[\[/, 'comment', '@comment_block'],
-        [/--.*$/, 'comment'],
-        [/@symbols/, {
-          cases: {
-            '@operators': 'operator',
-            '@default': ''
-          }
-        }]
+        [/\[\[/, 'string', '@string_multiline'],
+
+        // Numbers
+        [/0[xX][0-9a-fA-F]+/, 'number'],
+        [/\d+\.\d*/, 'number'],
+        [/\d+/, 'number'],
+
+        // Keywords - most important for color
+        [/\band\b/, 'keyword'],
+        [/\bbreak\b/, 'keyword'],
+        [/\bdo\b/, 'keyword'],
+        [/\belse\b/, 'keyword'],
+        [/\belseif\b/, 'keyword'],
+        [/\bend\b/, 'keyword'],
+        [/\bfalse\b/, 'keyword'],
+        [/\bfor\b/, 'keyword'],
+        [/\bfunction\b/, 'keyword'],
+        [/\bif\b/, 'keyword'],
+        [/\bin\b/, 'keyword'],
+        [/\blocal\b/, 'keyword'],
+        [/\bnil\b/, 'keyword'],
+        [/\bnot\b/, 'keyword'],
+        [/\bor\b/, 'keyword'],
+        [/\brepeat\b/, 'keyword'],
+        [/\breturn\b/, 'keyword'],
+        [/\bthen\b/, 'keyword'],
+        [/\btrue\b/, 'keyword'],
+        [/\buntil\b/, 'keyword'],
+        [/\bwhile\b/, 'keyword'],
+
+        // AdekoLib functions
+        [/\bADekoLib\b/, 'type'],
+        [/\bsetFace\b/, 'function'],
+        [/\bsetLayer\b/, 'function'],
+        [/\bsetThickness\b/, 'function'],
+        [/\bpoint\b/, 'function'],
+        [/\bline\b/, 'function'],
+        [/\bcircle\b/, 'function'],
+        [/\barc\b/, 'function'],
+
+        // Lua built-ins
+        [/\bprint\b/, 'function.builtin'],
+        [/\btype\b/, 'function.builtin'],
+        [/\btostring\b/, 'function.builtin'],
+        [/\btonumber\b/, 'function.builtin'],
+        [/\bpairs\b/, 'function.builtin'],
+        [/\bipairs\b/, 'function.builtin'],
+
+        // Math functions
+        [/\bmath\b/, 'type'],
+        [/\bstring\b/, 'type'],
+        [/\btable\b/, 'type'],
+
+        // Operators
+        [/==/, 'operator'],
+        [/~=/, 'operator'],
+        [/<=/, 'operator'],
+        [/>=/, 'operator'],
+        [/\.\./, 'operator'],
+        [/[=><+\-*/%^#]/, 'operator'],
+
+        // Delimiters
+        [/[{}()]/, 'delimiter'],
+        [/[[\]]/, 'delimiter'],
+        [/[,;.]/, 'delimiter'],
+
+        // Identifiers
+        [/[a-zA-Z_]\w*/, 'identifier'],
+
+        // Whitespace
+        [/\s+/, 'white']
       ],
 
       string_double: [
@@ -142,7 +186,13 @@ const initializeEditor = (): void => {
         [/'/, 'string', '@pop']
       ],
 
-      comment_block: [
+      string_multiline: [
+        [/[^\]]+/, 'string'],
+        [/\]\]/, 'string', '@pop'],
+        [/[\]]/, 'string']
+      ],
+
+      comment_multiline: [
         [/[^\]]+/, 'comment'],
         [/\]\]/, 'comment', '@pop'],
         [/[\]]/, 'comment']
@@ -152,15 +202,16 @@ const initializeEditor = (): void => {
 
   // Create the editor
   try {
+    const textStyle = themeService.getCurrentTextStyle()
     editor = monaco.editor.create(editorContainer.value, {
       value: props.fileContent || '',
       language: 'lua',
-      theme: 'vs-dark',
-      fontSize: 16,  // Increased from 14 to 16
-      fontFamily: 'Consolas, "Courier New", Monaco, monospace',
+      theme: 'vs-dark', // Use standard theme first, then switch to colorful theme
+      fontSize: textStyle.fontSize,
+      fontFamily: textStyle.fontFamily,
       fontWeight: '400',
-      lineHeight: 1.6,  // Increased from 1.4 to 1.6 for better readability
-      letterSpacing: 0.5,
+      lineHeight: textStyle.lineHeight,
+      letterSpacing: textStyle.letterSpacing,
       minimap: {
         enabled: true,
         scale: 1,
@@ -204,9 +255,49 @@ const initializeEditor = (): void => {
       height: editorContainer.value.clientHeight
     })
 
-    // Force layout after creation
+    // Register editor with theme service
+    themeService.registerEditor(editor)
+
+    // Apply saved theme after editor is created
     setTimeout(() => {
       if (editor) {
+        // Get saved theme or default to vs-dark
+        const savedTheme = localStorage.getItem('current-editor-theme') || 'vs-dark'
+
+        if (savedTheme === 'vs-dark') {
+          monaco.editor.setTheme('vs-dark')
+          console.log('✅ Applied standard dark theme')
+        } else {
+          const themeApplied = colorfulThemeService.applyTheme(savedTheme)
+          if (themeApplied) {
+            console.log(`✅ Applied colorful theme: ${savedTheme}`)
+          } else {
+            console.warn(`⚠️ Failed to apply theme ${savedTheme}, falling back to vs-dark`)
+            monaco.editor.setTheme('vs-dark')
+          }
+        }
+
+        // Force re-tokenization to ensure colors are applied
+        const model = editor.getModel()
+        if (model) {
+          // Trigger re-tokenization by setting language again
+          monaco.editor.setModelLanguage(model, 'lua')
+          console.log('🔄 Forced re-tokenization')
+
+          // Debug: Log tokenization for first few lines
+          setTimeout(() => {
+            try {
+              const lineCount = Math.min(model.getLineCount(), 5)
+              for (let i = 1; i <= lineCount; i++) {
+                const lineTokens = monaco.editor.tokenize(model.getLineContent(i), 'lua')
+                console.log(`Line ${i} tokens:`, lineTokens)
+              }
+            } catch (error) {
+              console.warn('Token debug failed:', error)
+            }
+          }, 200)
+        }
+
         editor.layout()
         console.log('Editor layout forced')
       }
@@ -421,8 +512,11 @@ onUnmounted(() => {
   }
 
   if (editor) {
+    // Unregister from theme service
+    themeService.unregisterEditor(editor)
     monacoIntelliSenseService.dispose()
     editor.dispose()
+    editor = null
   }
 })
 </script>

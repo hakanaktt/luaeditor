@@ -51,6 +51,9 @@
       @show-function-browser="handleShowFunctionBrowser"
       @zoom-in="handleZoomIn"
       @zoom-out="handleZoomOut"
+      @toggle-theme="handleToggleTheme"
+      @increase-font-size="handleIncreaseFontSize"
+      @decrease-font-size="handleDecreaseFontSize"
     />
     
     <!-- Main Content Area -->
@@ -231,6 +234,9 @@ import { useI18n } from '@/composables/useI18n'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useNotifications } from '@/composables/useNotifications'
 import { useEditorState } from '@/composables/useEditorState'
+import { colorfulThemeService } from './services/colorfulThemeService'
+import { themeService } from './services/themeService'
+import * as monaco from 'monaco-editor'
 import type { AppSettings } from './types'
 import type { DrawCommand } from '@/utils/luaExecutor'
 import type { EditorFile, SplitLayout } from '@/types'
@@ -298,8 +304,9 @@ const handleCursorChanged = (groupId: string, fileId: string, line: number, colu
 
 const handleActiveFileChanged = (file: EditorFile | null): void => {
   // Update status bar and other UI elements based on active file
+  // Note: Removed annoying toast notification that appeared on every click
   if (file) {
-    notifications.info(`Switched to ${file.name}`, 'Editor')
+    console.log(`Active file changed to: ${file.name}`)
   }
 }
 
@@ -495,6 +502,55 @@ const handleZoomOut = (): void => {
     editor.zoomOut()
     zoomLevel.value = Math.max(zoomLevel.value - 10, 50)
   }
+}
+
+const handleToggleTheme = (): void => {
+  // Simple theme cycling: vs-dark -> vibrant-dark -> vibrant-light -> neon-dark -> vs-dark
+  const themes = ['vs-dark', 'vibrant-dark', 'vibrant-light', 'neon-dark']
+  const themeNames = ['Dark', 'Vibrant Dark', 'Vibrant Light', 'Neon Dark']
+
+  // Get current theme (default to vs-dark)
+  const currentTheme = localStorage.getItem('current-editor-theme') || 'vs-dark'
+  const currentIndex = themes.indexOf(currentTheme)
+  const nextIndex = (currentIndex + 1) % themes.length
+  const nextTheme = themes[nextIndex]
+  const nextThemeName = themeNames[nextIndex]
+
+  console.log(`🎨 Switching from ${currentTheme} to ${nextTheme}`)
+
+  // Apply theme
+  if (nextTheme === 'vs-dark') {
+    monaco.editor.setTheme('vs-dark')
+    console.log('✅ Applied standard vs-dark theme')
+  } else {
+    const success = colorfulThemeService.applyTheme(nextTheme)
+    if (!success) {
+      console.warn(`Failed to apply theme ${nextTheme}, falling back to vs-dark`)
+      monaco.editor.setTheme('vs-dark')
+      localStorage.setItem('current-editor-theme', 'vs-dark')
+      notifications.warning('Theme failed to load, using default', 'Theme')
+      return
+    }
+  }
+
+  // Save current theme
+  localStorage.setItem('current-editor-theme', nextTheme)
+
+  notifications.info(`Theme changed to: ${nextThemeName}`, 'Theme')
+}
+
+const handleIncreaseFontSize = (): void => {
+  const currentStyle = themeService.getCurrentTextStyle()
+  const newFontSize = Math.min(currentStyle.fontSize + 2, 32)
+  themeService.setFontSize(newFontSize)
+  notifications.info(`Font size increased to: ${newFontSize}px`, 'Text Style')
+}
+
+const handleDecreaseFontSize = (): void => {
+  const currentStyle = themeService.getCurrentTextStyle()
+  const newFontSize = Math.max(currentStyle.fontSize - 2, 10)
+  themeService.setFontSize(newFontSize)
+  notifications.info(`Font size decreased to: ${newFontSize}px`, 'Text Style')
 }
 
 const handleResetZoom = (): void => {

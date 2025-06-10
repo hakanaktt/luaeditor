@@ -50,6 +50,9 @@ export default {
     zoomIn: 'Yakınlaştır',
     zoomOut: 'Uzaklaştır',
     resetZoom: 'Yakınlaştırmayı Sıfırla',
+    toggleTheme: 'Temayı Değiştir',
+    increaseFontSize: 'Yazı Boyutunu Artır',
+    decreaseFontSize: 'Yazı Boyutunu Azalt',
     fullscreen: 'Tam Ekranı Aç/Kapat'
   },
 
@@ -161,6 +164,8 @@ export default {
     notAvailable: 'Mevcut değil',
     autoDetectionNote: 'Lua kütüphanesi, model kütüphanesinin kardeş klasörü olarak otomatik olarak algılanacaktır.',
     language: 'Dil',
+    editorTheme: 'Editör Teması',
+    themeNote: 'Kod editörü için bir renk teması seçin',
     sidebarWidth: 'Kenar Çubuğu Genişliği',
     sidebarWidthNote: 'Kenar çubuğu panelinin genişliğini ayarlayın (200-600px). Ayrıca kenar çubuğu kenarını sürükleyerek yeniden boyutlandırabilirsiniz.',
     cancel: 'İptal',

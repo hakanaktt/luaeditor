@@ -58,6 +58,27 @@
           </select>
         </div>
 
+        <!-- Theme Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            {{ $t('settings.editorTheme') }}
+          </label>
+          <select
+            v-model="selectedTheme"
+            @change="onThemeChange"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="vs">Light Theme</option>
+            <option value="vs-dark">Dark Theme</option>
+            <option value="vibrant-dark">Vibrant Dark</option>
+            <option value="vibrant-light">Vibrant Light</option>
+            <option value="neon-dark">Neon Dark</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">
+            {{ $t('settings.themeNote') }}
+          </p>
+        </div>
+
         <!-- Sidebar Width -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -121,6 +142,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { X, Folder } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
+import { colorfulThemeService } from '../services/colorfulThemeService'
+import { themeService } from '../services/themeService'
 import type { AppSettings } from '@/types'
 
 const { t, changeLanguage, getCurrentLanguage, availableLanguages } = useI18n()
@@ -140,6 +163,7 @@ const emit = defineEmits<{
 const localSettings = ref<AppSettings>({ ...props.settings })
 const isSaving = ref<boolean>(false)
 const selectedLanguage = ref<string>(getCurrentLanguage().code)
+const selectedTheme = ref<string>('vs-dark')
 
 const computedLuaPath = computed(() => {
   if (!localSettings.value.model_library_path) return null
@@ -174,6 +198,15 @@ const selectModelLibraryPath = async (): Promise<void> => {
 const onLanguageChange = (): void => {
   changeLanguage(selectedLanguage.value)
   localSettings.value.language = selectedLanguage.value
+}
+
+const onThemeChange = (): void => {
+  // Apply theme immediately
+  if (selectedTheme.value === 'vs' || selectedTheme.value === 'vs-dark') {
+    themeService.setTheme(selectedTheme.value as any)
+  } else {
+    colorfulThemeService.applyTheme(selectedTheme.value)
+  }
 }
 
 const saveSettings = async (): Promise<void> => {

@@ -5,6 +5,13 @@ import './monaco-env' // Configure Monaco Editor environment before any Monaco i
 import 'monaco-editor/min/vs/editor/editor.main.css'
 import App from './App.vue'
 import i18n from './i18n'
+// Initialize theme services
+import { themeService } from './services/themeService'
+import { colorfulThemeService } from './services/colorfulThemeService'
+
+// Initialize themes
+themeService.initialize()
+colorfulThemeService.initialize()
 
 const app = createApp(App)
 app.use(i18n)
