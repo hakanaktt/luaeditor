@@ -136,7 +136,17 @@ export default {
   tabs: {
     files: 'Dosyalar',
     functions: 'Fonksiyonlar',
-    visualization: 'Görselleştirme'
+    visualization: 'Görselleştirme',
+    closeTab: 'Sekmeyi Kapat',
+    newTab: 'Yeni Sekme',
+    splitEditor: 'Editörü Dikey Böl',
+    tabMenu: 'Sekme Menüsü',
+    close: 'Kapat',
+    closeAll: 'Tüm Sekmeleri Kapat',
+    closeOthers: 'Diğer Sekmeleri Kapat',
+    closeModified: 'Değiştirilmiş Sekmeleri Kapat',
+    copyPath: 'Yolu Kopyala',
+    revealInExplorer: 'Dosya Gezgininde Göster'
   },
 
   // Ayarlar modalı
@@ -346,5 +356,12 @@ export default {
       globalShortcuts: 'Fonksiyon tuşları (F1, F2, F7) global olarak çalışır',
       menuAccess: 'Bu komutlara menü çubuğundan da erişebilirsiniz'
     }
+  },
+
+  // Editör
+  editor: {
+    noFileOpen: 'Açık dosya yok',
+    openFileHint: 'Gezginden bir dosya açın veya yeni bir tane oluşturun',
+    newFile: 'Yeni Dosya'
   }
 }

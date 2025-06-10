@@ -1,7 +1,7 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="flex-1 flex flex-col min-h-0">
     <!-- Editor Header -->
-    <div class="h-10 bg-gray-50 border-b border-gray-200 flex items-center px-4">
+    <div class="h-10 bg-gray-50 border-b border-gray-200 flex items-center px-4 flex-shrink-0">
       <div class="flex items-center space-x-2">
         <FileText :size="16" class="text-gray-500" />
         <span class="text-sm font-medium text-gray-700">{{ fileName }}</span>
@@ -12,9 +12,9 @@
         <span class="text-xs text-gray-500">Line {{ currentLine }}, Column {{ currentColumn }}</span>
       </div>
     </div>
-    
+
     <!-- Monaco Editor Container -->
-    <div ref="editorContainer" class="flex-1"></div>
+    <div ref="editorContainer" class="flex-1 monaco-editor-container min-h-0"></div>
   </div>
 </template>
 
@@ -27,9 +27,12 @@ import { monacoIntelliSenseService } from '../services/monacoIntellisense'
 interface Props {
   fileContent: string
   filePath: string
+  editorId?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  editorId: 'default'
+})
 
 // Define emits
 const emit = defineEmits<{
@@ -50,7 +53,12 @@ const fileName = computed(() => {
 })
 
 const initializeEditor = (): void => {
-  if (!editorContainer.value) return
+  if (!editorContainer.value) {
+    console.error('Editor container not found')
+    return
+  }
+
+  console.log('Initializing Monaco Editor with content:', props.fileContent?.substring(0, 100) + '...')
 
   // Configure Lua language support
   monaco.languages.register({ id: 'lua' })
@@ -143,21 +151,70 @@ const initializeEditor = (): void => {
   })
 
   // Create the editor
-  editor = monaco.editor.create(editorContainer.value, {
-    value: props.fileContent,
-    language: 'lua',
-    theme: 'vs-dark',
-    fontSize: 14,
-    minimap: { enabled: true },
-    wordWrap: 'on',
-    automaticLayout: true,
-    scrollBeyondLastLine: false,
-    renderWhitespace: 'selection',
-    lineNumbers: 'on',
-    folding: true,
-    matchBrackets: 'always',
-    autoIndent: 'full'
-  })
+  try {
+    editor = monaco.editor.create(editorContainer.value, {
+      value: props.fileContent || '',
+      language: 'lua',
+      theme: 'vs-dark',
+      fontSize: 16,  // Increased from 14 to 16
+      fontFamily: 'Consolas, "Courier New", Monaco, monospace',
+      fontWeight: '400',
+      lineHeight: 1.6,  // Increased from 1.4 to 1.6 for better readability
+      letterSpacing: 0.5,
+      minimap: {
+        enabled: true,
+        scale: 1,
+        showSlider: 'always'
+      },
+      wordWrap: 'on',
+      automaticLayout: true,
+      scrollBeyondLastLine: false,
+      renderWhitespace: 'selection',
+      lineNumbers: 'on',
+      lineNumbersMinChars: 3,
+      folding: true,
+      foldingHighlight: true,
+      matchBrackets: 'always',
+      autoIndent: 'full',
+      tabSize: 2,
+      insertSpaces: true,
+      detectIndentation: true,
+      // Better scrolling
+      smoothScrolling: true,
+      mouseWheelZoom: true,
+      // Better cursor
+      cursorBlinking: 'smooth',
+      cursorSmoothCaretAnimation: 'on',
+      cursorWidth: 2,
+      // Better selection
+      selectionHighlight: true,
+      occurrencesHighlight: 'singleFile',
+      // Better rendering
+      renderLineHighlight: 'all',
+      renderControlCharacters: false,
+      renderIndentGuides: true,
+      // Padding
+      padding: { top: 10, bottom: 10 }
+    })
+
+    console.log('Monaco Editor created successfully')
+    console.log('Editor value:', editor.getValue())
+    console.log('Container dimensions:', {
+      width: editorContainer.value.clientWidth,
+      height: editorContainer.value.clientHeight
+    })
+
+    // Force layout after creation
+    setTimeout(() => {
+      if (editor) {
+        editor.layout()
+        console.log('Editor layout forced')
+      }
+    }, 100)
+  } catch (error) {
+    console.error('Failed to create Monaco Editor:', error)
+    return
+  }
 
   // Listen for content changes
   editor.onDidChangeModelContent(() => {
@@ -277,6 +334,38 @@ const formatCode = (): void => {
   }
 }
 
+const setCursorPosition = (line: number, column: number): void => {
+  if (editor) {
+    editor.setPosition({ lineNumber: line, column: column })
+    editor.focus()
+  }
+}
+
+const setScrollPosition = (scrollTop: number, scrollLeft: number): void => {
+  if (editor) {
+    editor.setScrollTop(scrollTop)
+    editor.setScrollLeft(scrollLeft)
+  }
+}
+
+const getCursorPosition = () => {
+  if (editor) {
+    const position = editor.getPosition()
+    return position ? { line: position.lineNumber, column: position.column } : null
+  }
+  return null
+}
+
+const getScrollPosition = () => {
+  if (editor) {
+    return {
+      scrollTop: editor.getScrollTop(),
+      scrollLeft: editor.getScrollLeft()
+    }
+  }
+  return { scrollTop: 0, scrollLeft: 0 }
+}
+
 // Expose all methods
 defineExpose({
   insertText,
@@ -291,7 +380,11 @@ defineExpose({
   zoomIn,
   zoomOut,
   resetZoom,
-  formatCode
+  formatCode,
+  setCursorPosition,
+  setScrollPosition,
+  getCursorPosition,
+  getScrollPosition
 })
 
 // Watch for file content changes
@@ -299,13 +392,34 @@ watch(() => props.fileContent, (newContent) => {
   if (editor && editor.getValue() !== newContent) {
     editor.setValue(newContent)
   }
-})
+}, { immediate: true })
 
 onMounted(() => {
-  initializeEditor()
+  // Add a small delay to ensure the container is properly rendered
+  setTimeout(() => {
+    initializeEditor()
+  }, 50)
+
+  // Add resize observer to handle container size changes
+  if (editorContainer.value) {
+    const resizeObserver = new ResizeObserver(() => {
+      if (editor) {
+        editor.layout()
+      }
+    })
+    resizeObserver.observe(editorContainer.value)
+
+    // Store the observer for cleanup
+    ;(editorContainer.value as any)._resizeObserver = resizeObserver
+  }
 })
 
 onUnmounted(() => {
+  // Clean up resize observer
+  if (editorContainer.value && (editorContainer.value as any)._resizeObserver) {
+    ;(editorContainer.value as any)._resizeObserver.disconnect()
+  }
+
   if (editor) {
     monacoIntelliSenseService.dispose()
     editor.dispose()

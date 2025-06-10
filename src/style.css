@@ -18,6 +18,131 @@ body {
   width: 100vw;
 }
 
+/* Monaco Editor Styles */
+.monaco-editor {
+  font-family: 'Consolas', 'Courier New', 'Monaco', monospace !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.monaco-editor .view-lines {
+  line-height: 1.6 !important;
+}
+
+.monaco-editor .margin {
+  background-color: #1e1e1e !important;
+}
+
+.monaco-editor .margin-view-overlays .line-numbers {
+  color: #858585 !important;
+  font-size: 14px !important;
+}
+
+/* Ensure Monaco Editor container has proper dimensions */
+.monaco-editor-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure Monaco Editor itself fills the container */
+.monaco-editor-container .monaco-editor {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Enhanced text rendering for better readability */
+.monaco-editor .view-line {
+  color: #d4d4d4 !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+.monaco-editor .mtk1 {
+  color: #d4d4d4 !important;
+  font-size: 16px !important;
+}
+
+/* Dark theme enhancements */
+.monaco-editor.vs-dark {
+  background-color: #1e1e1e !important;
+}
+
+.monaco-editor.vs-dark .view-line {
+  color: #d4d4d4 !important;
+}
+
+.monaco-editor.vs-dark .mtk1 {
+  color: #d4d4d4 !important;
+}
+
+/* Lua syntax highlighting improvements */
+.monaco-editor .mtk5 { /* Keywords */
+  color: #569cd6 !important;
+  font-weight: 500 !important;
+}
+
+.monaco-editor .mtk6 { /* Strings */
+  color: #ce9178 !important;
+}
+
+.monaco-editor .mtk7 { /* Numbers */
+  color: #b5cea8 !important;
+}
+
+.monaco-editor .mtk8 { /* Comments */
+  color: #6a9955 !important;
+  font-style: italic !important;
+}
+
+.monaco-editor .mtk9 { /* Functions */
+  color: #dcdcaa !important;
+  font-weight: 500 !important;
+}
+
+/* Current line highlighting */
+.monaco-editor .current-line {
+  background-color: #2a2d2e !important;
+}
+
+/* Selection highlighting */
+.monaco-editor .selected-text {
+  background-color: #264f78 !important;
+}
+
+/* Cursor styling */
+.monaco-editor .cursor {
+  background-color: #aeafad !important;
+  width: 2px !important;
+}
+
+/* Minimap styling */
+.monaco-editor .minimap {
+  background-color: #1e1e1e !important;
+}
+
+/* Scrollbar styling */
+.monaco-editor .scrollbar .slider {
+  background-color: #424242 !important;
+}
+
+.monaco-editor .scrollbar .slider:hover {
+  background-color: #4f4f4f !important;
+}
+
+/* Better text anti-aliasing */
+.monaco-editor .view-lines .view-line span {
+  color: inherit !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+}
+
 /* Sidebar resize handle styles */
 .sidebar-resize-handle {
   position: absolute;

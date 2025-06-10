@@ -133,3 +133,29 @@ export interface ShortcutCategory {
   name: string
   shortcuts: KeyboardShortcut[]
 }
+
+// Multi-file editor types
+export interface EditorFile {
+  id: string
+  path: string
+  name: string
+  content: string
+  isModified: boolean
+  isUntitled: boolean
+  cursorLine: number
+  cursorColumn: number
+  scrollTop?: number
+  scrollLeft?: number
+}
+
+export interface EditorGroup {
+  id: string
+  activeFileId: string | null
+  files: EditorFile[]
+}
+
+export interface SplitLayout {
+  groups: EditorGroup[]
+  splitDirection: 'horizontal' | 'vertical' | null
+  activeGroupId: string | null
+}

@@ -134,7 +134,17 @@ export default {
   tabs: {
     files: 'Files',
     functions: 'Functions',
-    visualization: 'Visualization'
+    visualization: 'Visualization',
+    closeTab: 'Close Tab',
+    newTab: 'New Tab',
+    splitEditor: 'Split Editor Vertically',
+    tabMenu: 'Tab Menu',
+    close: 'Close',
+    closeAll: 'Close All Tabs',
+    closeOthers: 'Close Other Tabs',
+    closeModified: 'Close Modified Tabs',
+    copyPath: 'Copy Path',
+    revealInExplorer: 'Reveal in File Explorer'
   },
 
   // Settings modal
@@ -344,5 +354,12 @@ export default {
       globalShortcuts: 'Function keys (F1, F2, F7) work globally',
       menuAccess: 'You can also access these commands through the menu bar'
     }
+  },
+
+  // Editor
+  editor: {
+    noFileOpen: 'No file open',
+    openFileHint: 'Open a file from the explorer or create a new one',
+    newFile: 'New File'
   }
 }

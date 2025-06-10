@@ -2,7 +2,7 @@
   <div class="h-screen flex flex-col bg-gray-100">
     <!-- Menu Bar -->
     <MenuBar
-      :has-open-file="!!currentFile"
+      :has-open-file="!!activeFile"
       @new-file="handleNewFile"
       @open-file="handleOpenFile"
       @save-file="handleSaveFile"
@@ -35,9 +35,9 @@
     />
 
     <Toolbar
-      :has-open-file="!!currentFile"
+      :has-open-file="!!activeFile"
       :zoom-level="zoomLevel"
-      :current-file-name="currentFileName"
+      :current-file-name="activeFile?.name || ''"
       @new-file="handleNewFile"
       @open-file="handleOpenFile"
       @save-file="handleSaveFile"
@@ -129,7 +129,7 @@
                 <FunctionBrowser
                   v-show="activeTab === 'functions'"
                   :on-insert-function="handleInsertFunction"
-                  :editor-content="currentFileContent"
+                  :editor-content="activeFile?.content || ''"
                 />
                 <VisualizationPanel
                   v-show="activeTab === 'visualization'"
@@ -150,23 +150,16 @@
         </div>
 
         <!-- Editor Area -->
-        <div class="flex-1 flex flex-col">
-          <div class="flex-1 flex flex-col">
-            <Editor
-              v-if="currentFile"
-              ref="editorRef"
-              :file-content="currentFileContent"
-              :file-path="currentFile"
-              @content-changed="handleContentChanged"
-              @cursor-position-changed="handleCursorPositionChanged"
-            />
-            <div v-else class="flex-1 flex items-center justify-center text-gray-500">
-              <div class="text-center">
-                <h2 class="text-xl mb-2">{{ $t('app.welcome') }}</h2>
-                <p>{{ $t('app.welcomeMessage') }}</p>
-              </div>
-            </div>
-          </div>
+        <div class="flex-1 flex flex-col min-h-0">
+          <SplitEditor
+            ref="splitEditorRef"
+            :layout="editorLayout"
+            class="flex-1 min-h-0"
+            @layout-changed="handleLayoutChanged"
+            @file-changed="handleFileChanged"
+            @cursor-changed="handleCursorChanged"
+            @active-file-changed="handleActiveFileChanged"
+          />
 
           <!-- Debug Console -->
           <DebugConsole
@@ -202,13 +195,13 @@
 
     <!-- Status Bar -->
     <div class="h-6 bg-blue-600 text-white text-xs flex items-center px-2">
-      <span v-if="currentFile">{{ currentFile }}</span>
+      <span v-if="activeFile">{{ activeFile.path || activeFile.name }}</span>
       <span v-else>{{ $t('app.noFileOpen') }}</span>
       <div class="ml-auto flex items-center space-x-4">
-        <span v-if="currentFile" class="flex items-center space-x-1">
-          <span>{{ $t('status.line') }} {{ currentLine }}, {{ $t('status.column') }} {{ currentColumn }}</span>
+        <span v-if="activeFile" class="flex items-center space-x-1">
+          <span>{{ $t('status.line') }} {{ activeFile.cursorLine }}, {{ $t('status.column') }} {{ activeFile.cursorColumn }}</span>
         </span>
-        <span v-if="isModified" class="mr-2">{{ $t('status.modified') }}</span>
+        <span v-if="activeFile?.isModified" class="mr-2">{{ $t('status.modified') }}</span>
         <span>{{ $t('status.luaMacroEditor') }}</span>
       </div>
     </div>
@@ -225,7 +218,7 @@ import { open, save } from '@tauri-apps/plugin-dialog'
 import MenuBar from './components/MenuBar.vue'
 import Toolbar from './components/Toolbar.vue'
 import FileExplorer from './components/FileExplorer.vue'
-import Editor from './components/Editor.vue'
+import SplitEditor from './components/SplitEditor.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import FunctionBrowser from './components/FunctionBrowser.vue'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal.vue'
@@ -237,30 +230,42 @@ import { FolderOpen, Code, BarChart3 } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useNotifications } from '@/composables/useNotifications'
+import { useEditorState } from '@/composables/useEditorState'
 import type { AppSettings } from './types'
 import type { DrawCommand } from '@/utils/luaExecutor'
+import type { EditorFile, SplitLayout } from '@/types'
 
 const { t, changeLanguage } = useI18n()
 const { registerActions } = useKeyboardShortcuts()
 const notifications = useNotifications()
 
+// Editor state management
+const {
+  layout: editorLayout,
+  activeFile,
+  allFiles,
+  hasModifiedFiles,
+  initializeEditor,
+  createNewFile,
+  openFile,
+  updateFileContent,
+  updateCursorPosition,
+  saveFile,
+  closeFile,
+  splitEditor
+} = useEditorState()
+
 const currentDirectory = ref<string>('')
-const currentFile = ref<string | null>(null)
-const currentFileContent = ref<string>('')
-const isModified = ref<boolean>(false)
 const showSettingsModal = ref<boolean>(false)
 const showKeyboardShortcutsModal = ref<boolean>(false)
 const showAboutModal = ref<boolean>(false)
 const showDebugConsole = ref<boolean>(false)
 const activeTab = ref<'files' | 'functions' | 'visualization'>('files')
 const isVisualizationExpanded = ref<boolean>(false)
-const editorRef = ref<InstanceType<typeof Editor> | null>(null)
+const splitEditorRef = ref<InstanceType<typeof SplitEditor> | null>(null)
 const debugConsoleRef = ref<InstanceType<typeof DebugConsole> | null>(null)
 const visualizationPanelRef = ref<InstanceType<typeof VisualizationPanel> | null>(null)
 const zoomLevel = ref<number>(100)
-const currentFileName = ref<string>('')
-const currentLine = ref<number>(1)
-const currentColumn = ref<number>(1)
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary',
   language: 'en',
@@ -278,14 +283,31 @@ const isResizing = ref<boolean>(false)
 const minSidebarWidth = 48  // Just the icon bar
 const maxSidebarWidth = 800
 
+// New multi-file editor handlers
+const handleLayoutChanged = (newLayout: SplitLayout): void => {
+  editorLayout.value = newLayout
+}
+
+const handleFileChanged = (groupId: string, fileId: string, content: string): void => {
+  updateFileContent(groupId, fileId, content)
+}
+
+const handleCursorChanged = (groupId: string, fileId: string, line: number, column: number): void => {
+  updateCursorPosition(groupId, fileId, line, column)
+}
+
+const handleActiveFileChanged = (file: EditorFile | null): void => {
+  // Update status bar and other UI elements based on active file
+  if (file) {
+    notifications.info(`Switched to ${file.name}`, 'Editor')
+  }
+}
+
 const handleNewFile = (): void => {
-  currentFile.value = null
-  currentFileName.value = ''
-  currentFileContent.value = t('files.newFileComment')
-  isModified.value = true
-  currentLine.value = 1
-  currentColumn.value = 1
-  notifications.info('New file created', 'File Operation')
+  const newFile = createNewFile(undefined, t('files.newFileComment'))
+  if (newFile) {
+    notifications.info('New file created', 'File Operation')
+  }
 }
 
 const handleOpenFile = async (): Promise<void> => {
@@ -300,13 +322,10 @@ const handleOpenFile = async (): Promise<void> => {
 
     if (selected) {
       const content = await invoke<string>('read_file', { path: selected })
-      currentFile.value = selected as string
-      currentFileName.value = selected.split(/[/\\]/).pop() || ''
-      currentFileContent.value = content
-      isModified.value = false
-      currentLine.value = 1
-      currentColumn.value = 1
-      notifications.fileOpened(currentFileName.value)
+      const file = openFile(selected as string, content)
+      if (file) {
+        notifications.fileOpened(file.name)
+      }
     }
   } catch (error) {
     console.error(t('errors.openingFile'), error)
@@ -315,18 +334,25 @@ const handleOpenFile = async (): Promise<void> => {
 }
 
 const handleSaveFile = async (): Promise<void> => {
-  if (!currentFile.value) {
+  if (!activeFile.value) {
+    await handleSaveAs()
+    return
+  }
+
+  const file = activeFile.value
+
+  if (file.isUntitled) {
     await handleSaveAs()
     return
   }
 
   try {
     await invoke('write_file', {
-      path: currentFile.value,
-      content: currentFileContent.value
+      path: file.path,
+      content: file.content
     })
-    isModified.value = false
-    notifications.fileSaved(currentFileName.value || currentFile.value)
+    saveFile(file.id)
+    notifications.fileSaved(file.name)
   } catch (error) {
     console.error(t('errors.savingFile'), error)
     notifications.error('Failed to save file', 'File Operation', String(error))
@@ -334,6 +360,8 @@ const handleSaveFile = async (): Promise<void> => {
 }
 
 const handleSaveAs = async (): Promise<void> => {
+  if (!activeFile.value) return
+
   try {
     const filePath = await save({
       filters: [{
@@ -341,30 +369,31 @@ const handleSaveAs = async (): Promise<void> => {
         extensions: ['lua']
       }]
     })
-    
+
     if (filePath) {
-      await invoke('write_file', { 
-        path: filePath, 
-        content: currentFileContent.value 
+      await invoke('write_file', {
+        path: filePath,
+        content: activeFile.value.content
       })
-      currentFile.value = filePath
-      isModified.value = false
+      saveFile(activeFile.value.id, filePath)
+      notifications.fileSaved(filePath.split(/[/\\]/).pop() || filePath)
     }
   } catch (error) {
     console.error(t('errors.savingFile'), error)
+    notifications.error('Failed to save file', 'File Operation', String(error))
   }
 }
 
 const handleFileSelected = async (filePath: string): Promise<void> => {
   try {
     const content = await invoke<string>('read_file', { path: filePath })
-    currentFile.value = filePath
-    currentFileContent.value = content
-    isModified.value = false
-    currentLine.value = 1
-    currentColumn.value = 1
+    const file = openFile(filePath, content)
+    if (file) {
+      notifications.fileOpened(file.name)
+    }
   } catch (error) {
     console.error(t('errors.loadingFile'), error)
+    notifications.error('Failed to load file', 'File Operation', String(error))
   }
 }
 
@@ -372,19 +401,10 @@ const handleDirectoryChanged = (newDirectory: string): void => {
   currentDirectory.value = newDirectory
 }
 
-const handleContentChanged = (newContent: string): void => {
-  currentFileContent.value = newContent
-  isModified.value = true
-}
-
-const handleCursorPositionChanged = (line: number, column: number): void => {
-  currentLine.value = line
-  currentColumn.value = column
-}
-
 const handleInsertFunction = (functionCall: string): void => {
-  if (editorRef.value) {
-    editorRef.value.insertText(functionCall)
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.insertText(functionCall)
     // Switch to files tab to see the editor
     activeTab.value = 'files'
   }
@@ -392,50 +412,58 @@ const handleInsertFunction = (functionCall: string): void => {
 
 // Menu action handlers
 const handleUndo = (): void => {
-  if (editorRef.value) {
-    editorRef.value.undo()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.undo()
   }
 }
 
 const handleRedo = (): void => {
-  if (editorRef.value) {
-    editorRef.value.redo()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.redo()
   }
 }
 
 const handleCut = (): void => {
-  if (editorRef.value) {
-    editorRef.value.cut()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.cut()
   }
 }
 
 const handleCopy = (): void => {
-  if (editorRef.value) {
-    editorRef.value.copy()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.copy()
   }
 }
 
 const handlePaste = (): void => {
-  if (editorRef.value) {
-    editorRef.value.paste()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.paste()
   }
 }
 
 const handleSelectAll = (): void => {
-  if (editorRef.value) {
-    editorRef.value.selectAll()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.selectAll()
   }
 }
 
 const handleFind = (): void => {
-  if (editorRef.value) {
-    editorRef.value.showFindDialog()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.showFindDialog()
   }
 }
 
 const handleReplace = (): void => {
-  if (editorRef.value) {
-    editorRef.value.showReplaceDialog()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.showReplaceDialog()
   }
 }
 
@@ -454,22 +482,25 @@ const handleToggleFunctionBrowser = (): void => {
 }
 
 const handleZoomIn = (): void => {
-  if (editorRef.value) {
-    editorRef.value.zoomIn()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.zoomIn()
     zoomLevel.value = Math.min(zoomLevel.value + 10, 300)
   }
 }
 
 const handleZoomOut = (): void => {
-  if (editorRef.value) {
-    editorRef.value.zoomOut()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.zoomOut()
     zoomLevel.value = Math.max(zoomLevel.value - 10, 50)
   }
 }
 
 const handleResetZoom = (): void => {
-  if (editorRef.value) {
-    editorRef.value.resetZoom()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.resetZoom()
     zoomLevel.value = 100
   }
 }
@@ -479,7 +510,7 @@ const handleShowFunctionBrowser = (): void => {
 }
 
 const handleValidateLua = async (): Promise<void> => {
-  if (!currentFile.value || !currentFileContent.value) {
+  if (!activeFile.value) {
     notifications.warning(t('luaValidation.noFileOpen'), 'Lua Validation')
     return
   }
@@ -489,7 +520,7 @@ const handleValidateLua = async (): Promise<void> => {
   try {
     const { validateLuaSyntax } = await import('@/utils/luaExecutor')
 
-    const result = await validateLuaSyntax(currentFileContent.value)
+    const result = await validateLuaSyntax(activeFile.value.content)
 
     if (result.is_valid) {
       notifications.success(t('luaValidation.valid'), 'Lua Validation')
@@ -510,8 +541,9 @@ const handleValidateLua = async (): Promise<void> => {
 }
 
 const handleFormatCode = (): void => {
-  if (editorRef.value) {
-    editorRef.value.formatCode()
+  const editor = splitEditorRef.value?.getActiveEditor()
+  if (editor) {
+    editor.formatCode()
   }
 }
 
@@ -530,24 +562,25 @@ const handleShowAbout = (): void => {
 
 // Debug handlers
 const handleRunScript = async (): Promise<void> => {
-  if (!currentFile.value || !currentFileContent.value) {
+  if (!activeFile.value) {
     notifications.warning('No file open to execute', 'Script Execution')
     return
   }
 
+  const file = activeFile.value
   showDebugConsole.value = true
-  notifications.scriptExecutionStarted(currentFileName.value || currentFile.value)
+  notifications.scriptExecutionStarted(file.name)
 
   if (debugConsoleRef.value) {
     debugConsoleRef.value.setExecuting(true)
-    debugConsoleRef.value.addOutput('info', `Running script: ${currentFile.value}`)
+    debugConsoleRef.value.addOutput('info', `Running script: ${file.name}`)
   }
 
   try {
     const { executeLuaScript } = await import('@/utils/luaExecutor')
 
     const result = await executeLuaScript({
-      scriptContent: currentFileContent.value,
+      scriptContent: file.content,
       luaLibraryPath: luaLibraryPath.value,
       debugMode: false
     })
@@ -572,7 +605,7 @@ const handleRunScript = async (): Promise<void> => {
           isVisualizationExpanded.value = true
         }
         notifications.scriptExecutionCompleted(
-          currentFileName.value || currentFile.value,
+          file.name,
           result.execution_time_ms
         )
       } else {
@@ -581,7 +614,7 @@ const handleRunScript = async (): Promise<void> => {
           debugConsoleRef.value.addOutput('error', result.error)
         }
         notifications.scriptExecutionFailed(
-          currentFileName.value || currentFile.value,
+          file.name,
           result.error
         )
       }
@@ -592,32 +625,33 @@ const handleRunScript = async (): Promise<void> => {
       debugConsoleRef.value.addOutput('error', `${t('debugConsole.failed')}: ${error}`)
     }
     notifications.scriptExecutionFailed(
-      currentFileName.value || currentFile.value,
+      file.name,
       String(error)
     )
   }
 }
 
 const handleRunWithDebug = async (): Promise<void> => {
-  if (!currentFile.value || !currentFileContent.value) {
+  if (!activeFile.value) {
     notifications.warning('No file open to execute', 'Script Execution')
     return
   }
 
+  const file = activeFile.value
   showDebugConsole.value = true
   notifications.debugModeEnabled()
-  notifications.scriptExecutionStarted(currentFileName.value || currentFile.value)
+  notifications.scriptExecutionStarted(file.name)
 
   if (debugConsoleRef.value) {
     debugConsoleRef.value.setExecuting(true)
-    debugConsoleRef.value.addOutput('info', `Running script with debug mode: ${currentFile.value}`)
+    debugConsoleRef.value.addOutput('info', `Running script with debug mode: ${file.name}`)
   }
 
   try {
     const { executeLuaScript } = await import('@/utils/luaExecutor')
 
     const result = await executeLuaScript({
-      scriptContent: currentFileContent.value,
+      scriptContent: file.content,
       luaLibraryPath: luaLibraryPath.value,
       debugMode: true
     })
@@ -642,7 +676,7 @@ const handleRunWithDebug = async (): Promise<void> => {
           isVisualizationExpanded.value = true
         }
         notifications.scriptExecutionCompleted(
-          currentFileName.value || currentFile.value,
+          file.name,
           result.execution_time_ms
         )
       } else {
@@ -651,7 +685,7 @@ const handleRunWithDebug = async (): Promise<void> => {
           debugConsoleRef.value.addOutput('error', result.error)
         }
         notifications.scriptExecutionFailed(
-          currentFileName.value || currentFile.value,
+          file.name,
           result.error
         )
       }
@@ -662,7 +696,7 @@ const handleRunWithDebug = async (): Promise<void> => {
       debugConsoleRef.value.addOutput('error', `${t('debugConsole.failed')}: ${error}`)
     }
     notifications.scriptExecutionFailed(
-      currentFileName.value || currentFile.value,
+      file.name,
       String(error)
     )
   }
@@ -822,6 +856,13 @@ const loadSettings = async (): Promise<void> => {
 onMounted(async () => {
   console.log(t('status.initialized'))
   await loadSettings()
+
+  // Initialize editor with default group and create a welcome file
+  initializeEditor()
+  const welcomeFile = createNewFile(undefined, t('files.newFileComment'))
+  if (welcomeFile) {
+    console.log('Created welcome file:', welcomeFile.name)
+  }
 
   // Register keyboard shortcut actions
   registerActions({
