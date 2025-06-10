@@ -1,5 +1,6 @@
 import { AdekoFunction, LocalizedAdekoFunction, FunctionCategory, FunctionFilter, IntelliSenseSuggestion } from '../types'
 import { functionCategories } from '../data/adekoFunctions'
+import { allAdekoFunctions } from '../data/adekoFunctionsComplete'
 import { englishFunctionDefinitions } from '../data/adekoFunctions.en'
 import { turkishFunctionDefinitions } from '../data/adekoFunctions.tr'
 import { i18n } from '../i18n'
@@ -31,9 +32,40 @@ export class FunctionService {
   private localizedFunctions: Map<string, LocalizedAdekoFunction[]> = new Map()
 
   constructor() {
-    // Initialize localized function definitions
-    this.localizedFunctions.set('en', englishFunctionDefinitions)
-    this.localizedFunctions.set('tr', turkishFunctionDefinitions)
+    // Initialize localized function definitions using hybrid approach
+    // Merge complete catalog with localized versions to ensure all functions are available
+
+    // Create English functions: use localized versions where available, fallback to complete catalog
+    const englishFunctions = this.mergeLocalizedFunctions(allAdekoFunctions, englishFunctionDefinitions)
+
+    // Create Turkish functions: use localized versions where available, fallback to English
+    const turkishFunctions = this.mergeLocalizedFunctions(englishFunctions, turkishFunctionDefinitions)
+
+    this.localizedFunctions.set('en', englishFunctions)
+    this.localizedFunctions.set('tr', turkishFunctions)
+  }
+
+  /**
+   * Merge complete catalog with localized functions, preferring localized versions
+   */
+  private mergeLocalizedFunctions(
+    baseFunctions: AdekoFunction[],
+    localizedFunctions: LocalizedAdekoFunction[]
+  ): LocalizedAdekoFunction[] {
+    const localizedMap = new Map(localizedFunctions.map(func => [func.name, func]))
+
+    return baseFunctions.map(baseFunc => {
+      const localized = localizedMap.get(baseFunc.name)
+      if (localized) {
+        // Use localized version
+        return localized
+      } else {
+        // Convert base function to localized format (English fallback)
+        return {
+          ...baseFunc
+        } as LocalizedAdekoFunction
+      }
+    })
   }
 
   /**

@@ -1270,21 +1270,21 @@ export const allAdekoFunctions: AdekoFunction[] = [
   },
   {
     name: 'showPar',
-    description: 'Depicts and writes the name of a parameter with visual representation.',
+    description: 'Depicts and writes the name of the parameter for debugging and visualization purposes.',
     parameters: [
       { name: 'p1', type: 'table', description: 'First point {x, y}' },
       { name: 'p2', type: 'table', description: 'Second point {x, y}' },
       { name: 'parName', type: 'string', description: 'Parameter name to display' },
-      { name: 'thickness', type: 'number', description: 'Line thickness for visualization' }
+      { name: 'thickness', type: 'number', description: 'Line thickness for visualization', optional: true, defaultValue: 1 }
     ],
     returnType: 'void',
-    returnDescription: 'Creates visual parameter representation',
-    example: 'ADekoLib.showPar({0, 0}, {100, 0}, "Width", 2)',
+    returnDescription: 'Displays parameter name and visualization',
+    example: 'ADekoLib.showPar({0, 0}, {100, 100}, "Width", 2)',
     category: 'Utilities',
     subcategory: 'Debugging',
-    tags: ['parameter', 'visualization', 'annotation', 'debug'],
+    tags: ['parameter', 'debug', 'visualization', 'annotation'],
     complexity: 'intermediate',
-    usage: 'Use to visually annotate parameters in technical drawings',
+    usage: 'Use for debugging to visualize and annotate parameters',
     seeAlso: ['labelPoint', 'labelPoints']
   },
 
@@ -2169,25 +2169,6 @@ export const allAdekoFunctions: AdekoFunction[] = [
 
   // MISSING FUNCTIONS - ADDITIONAL UTILITIES
   {
-    name: 'showPar',
-    description: 'Shows parameters for debugging and visualization purposes.',
-    parameters: [
-      { name: 'p1', type: 'table', description: 'First point {x, y}' },
-      { name: 'p2', type: 'table', description: 'Second point {x, y}' },
-      { name: 'parName', type: 'string', description: 'Parameter name' },
-      { name: 'thickness', type: 'number', description: 'Thickness value' }
-    ],
-    returnType: 'void',
-    returnDescription: 'Displays parameter information',
-    example: 'ADekoLib.showPar({0, 0}, {10, 10}, "test", 5)',
-    category: 'Utilities',
-    subcategory: 'Debugging',
-    tags: ['debug', 'parameters', 'visualization'],
-    complexity: 'intermediate',
-    usage: 'Use for debugging and parameter visualization',
-    seeAlso: ['labelPoints', 'showPoints']
-  },
-  {
     name: 'parseModelParameters',
     description: 'Parses model parameters from a string format.',
     parameters: [
@@ -2202,22 +2183,6 @@ export const allAdekoFunctions: AdekoFunction[] = [
     complexity: 'intermediate',
     usage: 'Use to parse model parameter strings into usable data',
     seeAlso: ['split', 'checkInput']
-  },
-  {
-    name: 'polylineimp',
-    description: 'Internal polyline implementation function with advanced processing.',
-    parameters: [
-      { name: 'inputPoints', type: 'table', description: 'Array of input points' }
-    ],
-    returnType: 'void',
-    returnDescription: 'Creates processed polyline',
-    example: 'ADekoLib.polylineimp(points)',
-    category: 'Polyline Operations',
-    subcategory: 'Advanced Operations',
-    tags: ['polyline', 'implementation', 'internal'],
-    complexity: 'advanced',
-    usage: 'Internal function for advanced polyline processing',
-    seeAlso: ['polyline', 'line']
   },
   {
     name: 'arc2segments_noDepthProfile',
@@ -2236,24 +2201,6 @@ export const allAdekoFunctions: AdekoFunction[] = [
     complexity: 'advanced',
     usage: 'Use to convert arcs to line segments for processing',
     seeAlso: ['circularArc', 'bulge']
-  },
-  {
-    name: 'dashLine',
-    description: 'Creates a dashed line between two points with specified segment count.',
-    parameters: [
-      { name: 'pt1', type: 'table', description: 'Start point {x, y, z}' },
-      { name: 'pt2', type: 'table', description: 'End point {x, y, z}' },
-      { name: 'segCou', type: 'number', description: 'Number of segments (default: 10)', optional: true, defaultValue: 10 }
-    ],
-    returnType: 'void',
-    returnDescription: 'Creates dashed line geometry',
-    example: 'ADekoLib.dashLine({0, 0}, {100, 0}, 5)',
-    category: 'Shape Generation',
-    subcategory: 'Line Types',
-    tags: ['dash', 'line', 'segments'],
-    complexity: 'intermediate',
-    usage: 'Use to create dashed lines for construction or decoration',
-    seeAlso: ['line', 'polyline']
   },
 
   // DECORATIVE PATTERNS - MENDERES TILES AND CORNERS

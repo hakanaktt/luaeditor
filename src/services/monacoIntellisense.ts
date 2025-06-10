@@ -296,12 +296,15 @@ export class MonacoIntelliSenseService {
     const beforeWord = lineContent.substring(0, word.startColumn - 1)
 
     // Check if this is an AdekoLib function (including aliases)
+    // Look for patterns like "ADekoLib.functionName" or "G.functionName"
     const aliasMatch = beforeWord.match(/(\w+)\.$/);
     if (aliasMatch) {
       const prefix = aliasMatch[1];
       if (this.isAdekoLibAlias(prefix)) {
         const functionName = word.word
         const func = functionService.getFunction(functionName)
+
+
 
         if (func) {
           const signature = functionService.getFunctionSignature(functionName)
@@ -313,6 +316,41 @@ export class MonacoIntelliSenseService {
               endLineNumber: position.lineNumber,
               startColumn: word.startColumn,
               endColumn: word.endColumn
+            },
+            contents: [
+              { value: `\`\`\`lua\n${signature}\n\`\`\`` },
+              { value: documentation || func.description }
+            ]
+          }
+        }
+      }
+    }
+
+    // Also check if we're hovering over a function name that's part of an AdekoLib call
+    // Look for the full line to find patterns like "ADekoLib.functionName" where cursor is on functionName
+    const fullLinePattern = new RegExp(`(${Array.from(this.adekoLibAliases).join('|')})\\.(\\w+)`)
+    const fullLineMatch = lineContent.match(fullLinePattern)
+    if (fullLineMatch) {
+      const aliasName = fullLineMatch[1]
+      const functionName = fullLineMatch[2]
+
+      // Check if the cursor is positioned on the function name
+      const functionStartCol = lineContent.indexOf(functionName, lineContent.indexOf(aliasName + '.'))
+      const functionEndCol = functionStartCol + functionName.length
+
+      if (position.column >= functionStartCol + 1 && position.column <= functionEndCol + 1) {
+        const func = functionService.getFunction(functionName)
+
+        if (func) {
+          const signature = functionService.getFunctionSignature(functionName)
+          const documentation = functionService.getQuickHelp(functionName)
+
+          return {
+            range: {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: functionStartCol + 1,
+              endColumn: functionEndCol + 1
             },
             contents: [
               { value: `\`\`\`lua\n${signature}\n\`\`\`` },
