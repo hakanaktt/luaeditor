@@ -1,23 +1,23 @@
 import { AdekoFunction } from '../types'
 
 /**
- * Complete AdekoLib Function Catalog - All 135 Functions
+ * Complete AdekoLib Function Catalog - All 148 Functions
  *
- * This file contains the complete documentation for all 135 functions
+ * This file contains the complete documentation for all 148 functions
  * found in AdekoLib.lua, organized by category with detailed documentation.
  *
  * Functions are organized into the following categories:
  * - Geometric Transformations (4 functions)
  * - Point & Vector Operations (13 functions)
- * - Shape Generation (9 functions)
- * - Polyline Operations (6 functions)
+ * - Shape Generation (10 functions)
+ * - Polyline Operations (8 functions)
  * - Machining Operations (14 functions)
  * - Analysis & Testing (18 functions)
- * - Utilities (32 functions)
- * - Decorative Patterns (5 functions)
+ * - Utilities (37 functions)
+ * - Decorative Patterns (13 functions)
  * - Data Management (34 functions)
  *
- * Total: 135 functions with complete tooltipping support
+ * Total: 148 functions with complete tooltipping support
  */
 
 export const allAdekoFunctions: AdekoFunction[] = [
@@ -2165,5 +2165,248 @@ export const allAdekoFunctions: AdekoFunction[] = [
     complexity: 'basic',
     usage: 'Use to get the total number of parts in the current product',
     seeAlso: ['dataSize', 'partName']
+  },
+
+  // MISSING FUNCTIONS - ADDITIONAL UTILITIES
+  {
+    name: 'showPar',
+    description: 'Shows parameters for debugging and visualization purposes.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'First point {x, y}' },
+      { name: 'p2', type: 'table', description: 'Second point {x, y}' },
+      { name: 'parName', type: 'string', description: 'Parameter name' },
+      { name: 'thickness', type: 'number', description: 'Thickness value' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Displays parameter information',
+    example: 'ADekoLib.showPar({0, 0}, {10, 10}, "test", 5)',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['debug', 'parameters', 'visualization'],
+    complexity: 'intermediate',
+    usage: 'Use for debugging and parameter visualization',
+    seeAlso: ['labelPoints', 'showPoints']
+  },
+  {
+    name: 'parseModelParameters',
+    description: 'Parses model parameters from a string format.',
+    parameters: [
+      { name: 'string', type: 'string', description: 'Parameter string to parse' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Parsed parameters as table',
+    example: 'local params = ADekoLib.parseModelParameters("width=100;height=50")',
+    category: 'Utilities',
+    subcategory: 'Input Processing',
+    tags: ['parse', 'parameters', 'string', 'model'],
+    complexity: 'intermediate',
+    usage: 'Use to parse model parameter strings into usable data',
+    seeAlso: ['split', 'checkInput']
+  },
+  {
+    name: 'polylineimp',
+    description: 'Internal polyline implementation function with advanced processing.',
+    parameters: [
+      { name: 'inputPoints', type: 'table', description: 'Array of input points' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates processed polyline',
+    example: 'ADekoLib.polylineimp(points)',
+    category: 'Polyline Operations',
+    subcategory: 'Advanced Operations',
+    tags: ['polyline', 'implementation', 'internal'],
+    complexity: 'advanced',
+    usage: 'Internal function for advanced polyline processing',
+    seeAlso: ['polyline', 'line']
+  },
+  {
+    name: 'arc2segments_noDepthProfile',
+    description: 'Converts an arc to line segments without depth profile considerations.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'Start point with bulge {x, y, z, bulge}' },
+      { name: 'p2', type: 'table', description: 'End point {x, y, z}' },
+      { name: 'numberOfSegments', type: 'number', description: 'Number of segments to create' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Array of points representing the segmented arc',
+    example: 'local segments = ADekoLib.arc2segments_noDepthProfile(p1, p2, 8)',
+    category: 'Polyline Operations',
+    subcategory: 'Arc Processing',
+    tags: ['arc', 'segments', 'conversion'],
+    complexity: 'advanced',
+    usage: 'Use to convert arcs to line segments for processing',
+    seeAlso: ['circularArc', 'bulge']
+  },
+  {
+    name: 'dashLine',
+    description: 'Creates a dashed line between two points with specified segment count.',
+    parameters: [
+      { name: 'pt1', type: 'table', description: 'Start point {x, y, z}' },
+      { name: 'pt2', type: 'table', description: 'End point {x, y, z}' },
+      { name: 'segCou', type: 'number', description: 'Number of segments (default: 10)', optional: true, defaultValue: 10 }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates dashed line geometry',
+    example: 'ADekoLib.dashLine({0, 0}, {100, 0}, 5)',
+    category: 'Shape Generation',
+    subcategory: 'Line Types',
+    tags: ['dash', 'line', 'segments'],
+    complexity: 'intermediate',
+    usage: 'Use to create dashed lines for construction or decoration',
+    seeAlso: ['line', 'polyline']
+  },
+
+  // DECORATIVE PATTERNS - MENDERES TILES AND CORNERS
+  {
+    name: 'menderesAtile',
+    description: 'Creates a tile element for Menderes pattern type A.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes A tile pattern',
+    example: 'ADekoLib.menderesAtile({0, 0}, 0, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'tile'],
+    complexity: 'advanced',
+    usage: 'Use to create individual tile elements in Menderes A patterns',
+    seeAlso: ['menderesA', 'menderesAcorner']
+  },
+  {
+    name: 'menderesAcorner',
+    description: 'Creates a corner element for Menderes pattern type A.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes A corner pattern',
+    example: 'ADekoLib.menderesAcorner({0, 0}, 90, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'corner'],
+    complexity: 'advanced',
+    usage: 'Use to create corner elements in Menderes A patterns',
+    seeAlso: ['menderesA', 'menderesAtile']
+  },
+  {
+    name: 'menderesBtile',
+    description: 'Creates a tile element for Menderes pattern type B.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes B tile pattern',
+    example: 'ADekoLib.menderesBtile({0, 0}, 0, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'tile'],
+    complexity: 'advanced',
+    usage: 'Use to create individual tile elements in Menderes B patterns',
+    seeAlso: ['menderesB', 'menderesBcorner']
+  },
+  {
+    name: 'menderesBcorner',
+    description: 'Creates a corner element for Menderes pattern type B.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes B corner pattern',
+    example: 'ADekoLib.menderesBcorner({0, 0}, 90, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'corner'],
+    complexity: 'advanced',
+    usage: 'Use to create corner elements in Menderes B patterns',
+    seeAlso: ['menderesB', 'menderesBtile']
+  },
+  {
+    name: 'menderesCtile',
+    description: 'Creates a tile element for Menderes pattern type C.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes C tile pattern',
+    example: 'ADekoLib.menderesCtile({0, 0}, 0, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'tile'],
+    complexity: 'advanced',
+    usage: 'Use to create individual tile elements in Menderes C patterns',
+    seeAlso: ['menderesC', 'menderesCcorner']
+  },
+  {
+    name: 'menderesCcorner',
+    description: 'Creates a corner element for Menderes pattern type C.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes C corner pattern',
+    example: 'ADekoLib.menderesCcorner({0, 0}, 90, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'corner'],
+    complexity: 'advanced',
+    usage: 'Use to create corner elements in Menderes C patterns',
+    seeAlso: ['menderesC', 'menderesCtile']
+  },
+  {
+    name: 'menderesDtile',
+    description: 'Creates a tile element for Menderes pattern type D.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes D tile pattern',
+    example: 'ADekoLib.menderesDtile({0, 0}, 0, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'tile'],
+    complexity: 'advanced',
+    usage: 'Use to create individual tile elements in Menderes D patterns',
+    seeAlso: ['menderesD', 'menderesDcorner']
+  },
+  {
+    name: 'menderesDcorner',
+    description: 'Creates a corner element for Menderes pattern type D.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Starting point {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Angle offset in degrees' },
+      { name: 'uX', type: 'number', description: 'Unit X dimension' },
+      { name: 'uY', type: 'number', description: 'Unit Y dimension' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates Menderes D corner pattern',
+    example: 'ADekoLib.menderesDcorner({0, 0}, 90, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['decorative', 'pattern', 'menderes', 'corner'],
+    complexity: 'advanced',
+    usage: 'Use to create corner elements in Menderes D patterns',
+    seeAlso: ['menderesD', 'menderesDtile']
   }
 ]

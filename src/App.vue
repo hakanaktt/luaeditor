@@ -129,6 +129,7 @@
                 <FunctionBrowser
                   v-show="activeTab === 'functions'"
                   :on-insert-function="handleInsertFunction"
+                  :editor-content="currentFileContent"
                 />
                 <VisualizationPanel
                   v-show="activeTab === 'visualization'"

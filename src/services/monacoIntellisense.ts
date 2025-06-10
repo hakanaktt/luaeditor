@@ -582,12 +582,18 @@ export class MonacoIntelliSenseService {
     const position = this.editor.getPosition()
     if (!position) return
 
+    // Detect aliases in the current document
+    this.detectAdekoLibAliases(this.editor.getModel()!)
+
+    // Get the appropriate alias name (first found alias or default to 'ADekoLib')
+    const aliasName = Array.from(this.adekoLibAliases).find(alias => alias !== 'ADekoLib') || 'ADekoLib'
+
     // Create snippet with parameter placeholders
-    const parameterSnippet = func.parameters.map((param, index) => 
+    const parameterSnippet = func.parameters.map((param, index) =>
       `\${${index + 1}:${param.name}}`
     ).join(', ')
 
-    const snippet = `ADekoLib.${func.name}(${parameterSnippet})`
+    const snippet = `${aliasName}.${func.name}(${parameterSnippet})`
 
     this.editor.executeEdits('insert-function', [{
       range: {

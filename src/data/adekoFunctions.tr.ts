@@ -792,5 +792,82 @@ export const turkishFunctionDefinitions: LocalizedAdekoFunction[] = [
     complexity: 'basic',
     usage: 'Mevcut üründeki toplam parça sayısını almak için kullanın',
     seeAlso: ['dataSize', 'partName']
+  },
+
+  // EKSİK FONKSİYONLAR - YARDIMCI ARAÇLAR
+  {
+    name: 'showPar',
+    description: 'Hata ayıklama ve görselleştirme amaçları için parametreleri gösterir.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'İlk nokta {x, y}' },
+      { name: 'p2', type: 'table', description: 'İkinci nokta {x, y}' },
+      { name: 'parName', type: 'string', description: 'Parametre adı' },
+      { name: 'thickness', type: 'number', description: 'Kalınlık değeri' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Parametre bilgilerini görüntüler',
+    example: 'ADekoLib.showPar({0, 0}, {10, 10}, "test", 5)',
+    category: 'Utilities',
+    subcategory: 'Debugging',
+    tags: ['hata-ayıklama', 'parametreler', 'görselleştirme'],
+    complexity: 'intermediate',
+    usage: 'Hata ayıklama ve parametre görselleştirme için kullanın',
+    seeAlso: ['labelPoints', 'showPoints']
+  },
+  {
+    name: 'arc2segments_noDepthProfile',
+    description: 'Derinlik profili dikkate almadan bir yayı çizgi segmentlerine dönüştürür.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'Bulge ile başlangıç noktası {x, y, z, bulge}' },
+      { name: 'p2', type: 'table', description: 'Bitiş noktası {x, y, z}' },
+      { name: 'numberOfSegments', type: 'number', description: 'Oluşturulacak segment sayısı' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Segmentlenmiş yayı temsil eden nokta dizisi',
+    example: 'local segments = ADekoLib.arc2segments_noDepthProfile(p1, p2, 8)',
+    category: 'Polyline Operations',
+    subcategory: 'Arc Processing',
+    tags: ['yay', 'segmentler', 'dönüştürme'],
+    complexity: 'advanced',
+    usage: 'Yayları işleme için çizgi segmentlerine dönüştürmek için kullanın',
+    seeAlso: ['circularArc', 'bulge']
+  },
+  {
+    name: 'menderesAtile',
+    description: 'Menderes desen tip A için bir karo öğesi oluşturur.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Başlangıç noktası {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Derece cinsinden açı kayması' },
+      { name: 'uX', type: 'number', description: 'Birim X boyutu' },
+      { name: 'uY', type: 'number', description: 'Birim Y boyutu' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Menderes A karo deseni oluşturur',
+    example: 'ADekoLib.menderesAtile({0, 0}, 0, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['dekoratif', 'desen', 'menderes', 'karo'],
+    complexity: 'advanced',
+    usage: 'Menderes A desenlerinde bireysel karo öğeleri oluşturmak için kullanın',
+    seeAlso: ['menderesA', 'menderesAcorner']
+  },
+  {
+    name: 'menderesAcorner',
+    description: 'Menderes desen tip A için bir köşe öğesi oluşturur.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Başlangıç noktası {x, y}' },
+      { name: 'angleOffset', type: 'number', description: 'Derece cinsinden açı kayması' },
+      { name: 'uX', type: 'number', description: 'Birim X boyutu' },
+      { name: 'uY', type: 'number', description: 'Birim Y boyutu' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Menderes A köşe deseni oluşturur',
+    example: 'ADekoLib.menderesAcorner({0, 0}, 90, 10, 10)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['dekoratif', 'desen', 'menderes', 'köşe'],
+    complexity: 'advanced',
+    usage: 'Menderes A desenlerinde köşe öğeleri oluşturmak için kullanın',
+    seeAlso: ['menderesA', 'menderesAtile']
   }
 ]

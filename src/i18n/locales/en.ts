@@ -172,7 +172,8 @@ export default {
     example: 'Example',
     usage: 'Usage',
     relatedFunctions: 'Related Functions',
-    optional: 'optional'
+    optional: 'optional',
+    backToList: 'Back to Function List'
   },
 
   // Function categories

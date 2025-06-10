@@ -174,7 +174,8 @@ export default {
     example: 'Örnek',
     usage: 'Kullanım',
     relatedFunctions: 'İlgili Fonksiyonlar',
-    optional: 'isteğe bağlı'
+    optional: 'isteğe bağlı',
+    backToList: 'Fonksiyon Listesine Dön'
   },
 
   // Fonksiyon kategorileri

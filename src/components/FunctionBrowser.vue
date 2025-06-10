@@ -91,7 +91,12 @@
     <!-- Function Details Panel -->
     <div v-if="selectedFunction" class="function-details">
       <div class="details-header">
-        <h3>{{ selectedFunction.name }}</h3>
+        <div class="details-header-left">
+          <button class="back-btn" @click="clearSelection" :title="$t('functions.backToList')">
+            <ArrowLeft />
+          </button>
+          <h3>{{ selectedFunction.name }}</h3>
+        </div>
         <button class="insert-btn" @click="insertFunction">
           <Plus /> {{ $t('functions.insertFunction') }}
         </button>
@@ -146,7 +151,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Search, Plus } from 'lucide-vue-next'
+import { Search, Plus, ArrowLeft } from 'lucide-vue-next'
 import { AdekoFunction, FunctionFilter } from '../types'
 import { functionService } from '../services/functionService'
 import { useI18n } from 'vue-i18n'
@@ -154,10 +159,12 @@ import { useI18n } from 'vue-i18n'
 // Props
 interface Props {
   onInsertFunction?: (functionCall: string) => void
+  editorContent?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  onInsertFunction: () => {}
+  onInsertFunction: () => {},
+  editorContent: ''
 })
 
 // i18n setup
@@ -249,16 +256,41 @@ const getFunctionSignature = (func: AdekoFunction) => {
   return `${func.name}(${params}): ${func.returnType}`
 }
 
+const detectAdekoLibAlias = (): string => {
+  if (!props.editorContent) return 'ADekoLib'
+
+  // Look for patterns like: G = ADekoLib, local G = ADekoLib, etc.
+  const aliasPattern = /(?:local\s+)?(\w+)\s*=\s*ADekoLib/g
+  let match
+  const aliases: string[] = []
+
+  while ((match = aliasPattern.exec(props.editorContent)) !== null) {
+    const aliasName = match[1]
+    if (aliasName !== 'ADekoLib') {
+      aliases.push(aliasName)
+    }
+  }
+
+  // Return the first found alias, or default to 'ADekoLib'
+  return aliases.length > 0 ? aliases[0] : 'ADekoLib'
+}
+
 const insertFunction = () => {
   if (!selectedFunction.value) return
-  
+
   const func = selectedFunction.value
   const paramPlaceholders = func.parameters.map((p) =>
     `${p.name}`
   ).join(', ')
-  
-  const functionCall = `ADekoLib.${func.name}(${paramPlaceholders})`
+
+  const aliasName = detectAdekoLibAlias()
+  const functionCall = `${aliasName}.${func.name}(${paramPlaceholders})`
   props.onInsertFunction(functionCall)
+}
+
+const clearSelection = () => {
+  selectedFunction.value = null
+  relatedFunctions.value = []
 }
 
 // Watch for function selection changes
@@ -475,10 +507,14 @@ watch(locale, () => {
 }
 
 .function-details {
-  width: 400px;
-  border-left: 1px solid #3e3e3e;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: #252526;
   overflow-y: auto;
+  z-index: 10;
 }
 
 .details-header {
@@ -487,11 +523,42 @@ watch(locale, () => {
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid #3e3e3e;
+  background: #2d2d2d;
+  position: sticky;
+  top: 0;
+  z-index: 11;
+}
+
+.details-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: #3e3e3e;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #d4d4d4;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #4a4a4a;
+  border-color: #007acc;
+  color: #ffffff;
 }
 
 .details-header h3 {
   margin: 0;
   color: #4fc3f7;
+  font-size: 1.2rem;
 }
 
 .insert-btn {
