@@ -458,5 +458,210 @@ export const englishFunctionDefinitions: LocalizedAdekoFunction[] = [
     complexity: 'intermediate',
     usage: 'Use to remove material from rectangular areas for recesses or clearances',
     seeAlso: ['inclinedPocket', 'cleanCorners']
+  },
+
+  // NEWLY ADDED FUNCTIONS - FIRST BATCH (114-128)
+  {
+    name: 'node',
+    description: 'Creates points with bulges. Original name for point() function.',
+    parameters: [
+      { name: 'x', type: 'number', description: 'X-coordinate' },
+      { name: 'y', type: 'number', description: 'Y-coordinate' },
+      { name: 'z', type: 'number', description: 'Z-coordinate', optional: true, defaultValue: 0 },
+      { name: 'bulge', type: 'number', description: 'Bulge value for arc', optional: true, defaultValue: 0 }
+    ],
+    returnType: 'void',
+    returnDescription: 'Creates a point in current shape',
+    example: 'ADekoLib.node(10, 20, 0, 0)',
+    category: 'Shape Generation',
+    subcategory: 'Basic Shapes',
+    tags: ['node', 'point', 'basic'],
+    complexity: 'basic',
+    usage: 'Use to create individual points when building shapes manually',
+    seeAlso: ['point', 'nextShape']
+  },
+  {
+    name: 'nodeSize',
+    description: 'Returns the number of points for a given shape. Original name for pointSize().',
+    parameters: [
+      { name: 'dataIndex', type: 'number', description: 'Shape index' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Number of points in the shape',
+    example: 'local pointCount = ADekoLib.nodeSize(1)',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['node', 'count', 'query', 'shape'],
+    complexity: 'basic',
+    usage: 'Use to get the number of points in a specific shape',
+    seeAlso: ['dataSize', 'nodeFeature']
+  },
+  {
+    name: 'nodeFeature',
+    description: 'Returns x, y, z, and bulge of a point for a given shape. Original name for pointFeature().',
+    parameters: [
+      { name: 'xyzbulge', type: 'number', description: 'Feature type: 0=X, 1=Y, 2=Z, 3=bulge' },
+      { name: 'dataIndex', type: 'number', description: 'Shape index' },
+      { name: 'pointIndex', type: 'number', description: 'Point index' }
+    ],
+    returnType: 'number',
+    returnDescription: 'The requested coordinate or bulge value',
+    example: 'local x = ADekoLib.nodeFeature(0, 1, 1) -- Get X of first point',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['node', 'coordinate', 'bulge', 'query'],
+    complexity: 'intermediate',
+    usage: 'Use to extract specific coordinate values from points',
+    seeAlso: ['nodeSize', 'dataSize']
+  },
+  {
+    name: 'nextNode',
+    description: 'Moves the point index forward. Used internally. Original name for nextPoint().',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Advances to next point',
+    example: 'ADekoLib.nextNode() -- Internal use',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['internal', 'node', 'index'],
+    complexity: 'advanced',
+    usage: 'Internal function for point management',
+    seeAlso: ['nextPoint', 'node']
+  },
+  {
+    name: 'showPoints',
+    description: 'Enables/disables the display of points as small circles for visualization.',
+    parameters: [
+      { name: 'show', type: 'boolean', description: 'True to show points, false to hide' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Sets point visibility mode',
+    example: 'ADekoLib.showPoints(true)',
+    category: 'Utilities',
+    subcategory: 'Visualization',
+    tags: ['points', 'visualization', 'debug'],
+    complexity: 'basic',
+    usage: 'Use to visualize point locations during development',
+    seeAlso: ['labelPoints', 'enableListing']
+  },
+  {
+    name: 'unpack',
+    description: 'Unpacks a table into individual values. Lua standard function wrapper.',
+    parameters: [
+      { name: 'table', type: 'table', description: 'Table to unpack' }
+    ],
+    returnType: 'multiple',
+    returnDescription: 'Individual values from the table',
+    example: 'local x, y, z = ADekoLib.unpack({1, 2, 3})',
+    category: 'Utilities',
+    subcategory: 'Data Processing',
+    tags: ['unpack', 'table', 'utility'],
+    complexity: 'basic',
+    usage: 'Use to convert table elements to individual arguments',
+    seeAlso: ['checkInput', 'deepcopy']
+  },
+  {
+    name: 'validateNumber',
+    description: 'Validates that a value is a valid number and optionally within a range.',
+    parameters: [
+      { name: 'value', type: 'any', description: 'Value to validate' },
+      { name: 'min', type: 'number', description: 'Minimum allowed value', optional: true },
+      { name: 'max', type: 'number', description: 'Maximum allowed value', optional: true }
+    ],
+    returnType: 'boolean',
+    returnDescription: 'True if value is a valid number within range',
+    example: 'local valid = ADekoLib.validateNumber(value, 0, 100)',
+    category: 'Analysis & Testing',
+    subcategory: 'Validation',
+    tags: ['validation', 'number', 'range'],
+    complexity: 'basic',
+    usage: 'Use to validate numeric inputs before processing',
+    seeAlso: ['areRoughlyEqual', 'checkFuzzy']
+  },
+  {
+    name: 'sortCCW',
+    description: 'Sorts points in counter-clockwise order around their centroid.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points to sort' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Points sorted in counter-clockwise order',
+    example: 'local sorted = ADekoLib.sortCCW(polygonPoints)',
+    category: 'Utilities',
+    subcategory: 'Sorting',
+    tags: ['sort', 'counter-clockwise', 'polygon'],
+    complexity: 'intermediate',
+    usage: 'Use to ensure consistent polygon winding for area calculations',
+    seeAlso: ['sortCW', 'center']
+  },
+  {
+    name: 'sortCW',
+    description: 'Sorts points in clockwise order around their centroid.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points to sort' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Points sorted in clockwise order',
+    example: 'local sorted = ADekoLib.sortCW(polygonPoints)',
+    category: 'Utilities',
+    subcategory: 'Sorting',
+    tags: ['sort', 'clockwise', 'polygon'],
+    complexity: 'intermediate',
+    usage: 'Use to ensure consistent polygon winding for machining operations',
+    seeAlso: ['sortCCW', 'center']
+  },
+  {
+    name: 'yIntercept',
+    description: 'Calculates the Y-intercept of a line passing through two points.',
+    parameters: [
+      { name: 'x1', type: 'number', description: 'X-coordinate of first point' },
+      { name: 'y1', type: 'number', description: 'Y-coordinate of first point' },
+      { name: 'x2', type: 'number', description: 'X-coordinate of second point' },
+      { name: 'y2', type: 'number', description: 'Y-coordinate of second point' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Y-intercept value',
+    example: 'local b = ADekoLib.yIntercept(0, 5, 10, 15) -- Returns 5',
+    category: 'Point & Vector Operations',
+    subcategory: 'Line Operations',
+    tags: ['intercept', 'line', 'geometry'],
+    complexity: 'basic',
+    usage: 'Use to find where a line crosses the Y-axis',
+    seeAlso: ['slope', 'lineLineIntersection']
+  },
+  {
+    name: 'radius',
+    description: 'Calculates the radius of a circle passing through three points.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'First point {x, y}' },
+      { name: 'p2', type: 'table', description: 'Second point {x, y}' },
+      { name: 'p3', type: 'table', description: 'Third point {x, y}' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Radius of the circle',
+    example: 'local r = ADekoLib.radius({0, 0}, {10, 0}, {5, 5})',
+    category: 'Point & Vector Operations',
+    subcategory: 'Circle Operations',
+    tags: ['radius', 'circle', 'geometry'],
+    complexity: 'intermediate',
+    usage: 'Use to find the radius of a circle defined by three points',
+    seeAlso: ['bulge', 'circularArc']
+  },
+  {
+    name: 'scaleDepth',
+    description: 'Scales the Z-coordinates (depth) of points by a factor.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Array of points with Z-coordinates' },
+      { name: 'scaleFactor', type: 'number', description: 'Scale factor for Z-coordinates' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Points with scaled Z-coordinates',
+    example: 'local scaled = ADekoLib.scaleDepth(points3D, 2.0)',
+    category: 'Point & Vector Operations',
+    subcategory: 'Vector Operations',
+    tags: ['scale', 'depth', '3D'],
+    complexity: 'basic',
+    usage: 'Use to adjust depth values for 3D operations',
+    seeAlso: ['vecScale', 'removeBackgroundAtTop']
   }
 ]

@@ -114,6 +114,22 @@ export default {
     message: 'Message'
   },
 
+  // Tooltips and IntelliSense
+  tooltips: {
+    adekoFunction: 'AdekoLib Function',
+    luaFunction: 'Lua Standard Function',
+    luaKeyword: 'Lua Keyword',
+    parameters: 'Parameters',
+    returns: 'Returns',
+    example: 'Example',
+    category: 'Category',
+    complexity: 'Complexity',
+    seeAlso: 'See Also',
+    module: 'Module',
+    syntax: 'Syntax',
+    description: 'Description'
+  },
+
   // Navigation tabs
   tabs: {
     files: 'Files',

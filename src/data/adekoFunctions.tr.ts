@@ -457,5 +457,340 @@ export const turkishFunctionDefinitions: LocalizedAdekoFunction[] = [
     complexity: 'intermediate',
     usage: 'Girintiler veya boşluklar için dikdörtgen alanlardan malzeme kaldırmak için kullanın',
     seeAlso: ['inclinedPocket', 'cleanCorners']
+  },
+
+  // YENİ EKLENMİŞ FONKSİYONLAR - İLK GRUP (114-128)
+  {
+    name: 'node',
+    description: 'Bulge ile noktalar oluşturur. point() fonksiyonunun orijinal adı.',
+    parameters: [
+      { name: 'x', type: 'number', description: 'X koordinatı' },
+      { name: 'y', type: 'number', description: 'Y koordinatı' },
+      { name: 'z', type: 'number', description: 'Z koordinatı', optional: true, defaultValue: 0 },
+      { name: 'bulge', type: 'number', description: 'Yay için bulge değeri', optional: true, defaultValue: 0 }
+    ],
+    returnType: 'void',
+    returnDescription: 'Mevcut şekilde bir nokta oluşturur',
+    example: 'ADekoLib.node(10, 20, 0, 0)',
+    category: 'Shape Generation',
+    subcategory: 'Basic Shapes',
+    tags: ['düğüm', 'nokta', 'temel'],
+    complexity: 'basic',
+    usage: 'Şekilleri manuel olarak oluştururken bireysel noktalar oluşturmak için kullanın',
+    seeAlso: ['point', 'nextShape']
+  },
+  {
+    name: 'nodeSize',
+    description: 'Verilen şekil için nokta sayısını döndürür. pointSize() fonksiyonunun orijinal adı.',
+    parameters: [
+      { name: 'dataIndex', type: 'number', description: 'Şekil indeksi' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Şekildeki nokta sayısı',
+    example: 'local pointCount = ADekoLib.nodeSize(1)',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['düğüm', 'sayım', 'sorgu', 'şekil'],
+    complexity: 'basic',
+    usage: 'Belirli bir şekildeki nokta sayısını almak için kullanın',
+    seeAlso: ['dataSize', 'nodeFeature']
+  },
+  {
+    name: 'nodeFeature',
+    description: 'Verilen şekil için bir noktanın x, y, z ve bulge değerini döndürür. pointFeature() fonksiyonunun orijinal adı.',
+    parameters: [
+      { name: 'xyzbulge', type: 'number', description: 'Özellik türü: 0=X, 1=Y, 2=Z, 3=bulge' },
+      { name: 'dataIndex', type: 'number', description: 'Şekil indeksi' },
+      { name: 'pointIndex', type: 'number', description: 'Nokta indeksi' }
+    ],
+    returnType: 'number',
+    returnDescription: 'İstenen koordinat veya bulge değeri',
+    example: 'local x = ADekoLib.nodeFeature(0, 1, 1) -- İlk noktanın X değerini al',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['düğüm', 'koordinat', 'bulge', 'sorgu'],
+    complexity: 'intermediate',
+    usage: 'Noktalardan belirli koordinat değerlerini çıkarmak için kullanın',
+    seeAlso: ['nodeSize', 'dataSize']
+  },
+  {
+    name: 'nextNode',
+    description: 'Nokta indeksini ileriye taşır. Dahili olarak kullanılır. nextPoint() fonksiyonunun orijinal adı.',
+    parameters: [],
+    returnType: 'void',
+    returnDescription: 'Sonraki noktaya ilerler',
+    example: 'ADekoLib.nextNode() -- Dahili kullanım',
+    category: 'Utilities',
+    subcategory: 'System Functions',
+    tags: ['dahili', 'düğüm', 'indeks'],
+    complexity: 'advanced',
+    usage: 'Nokta yönetimi için dahili fonksiyon',
+    seeAlso: ['nextPoint', 'node']
+  },
+  {
+    name: 'showPoints',
+    description: 'Görselleştirme için noktaların küçük daireler olarak gösterimini etkinleştirir/devre dışı bırakır.',
+    parameters: [
+      { name: 'show', type: 'boolean', description: 'Noktaları göstermek için true, gizlemek için false' }
+    ],
+    returnType: 'void',
+    returnDescription: 'Nokta görünürlük modunu ayarlar',
+    example: 'ADekoLib.showPoints(true)',
+    category: 'Utilities',
+    subcategory: 'Visualization',
+    tags: ['noktalar', 'görselleştirme', 'hata-ayıklama'],
+    complexity: 'basic',
+    usage: 'Geliştirme sırasında nokta konumlarını görselleştirmek için kullanın',
+    seeAlso: ['labelPoints', 'enableListing']
+  },
+  {
+    name: 'unpack',
+    description: 'Bir tabloyu bireysel değerlere açar. Lua standart fonksiyon sarmalayıcısı.',
+    parameters: [
+      { name: 'table', type: 'table', description: 'Açılacak tablo' }
+    ],
+    returnType: 'multiple',
+    returnDescription: 'Tablodan bireysel değerler',
+    example: 'local x, y, z = ADekoLib.unpack({1, 2, 3})',
+    category: 'Utilities',
+    subcategory: 'Data Processing',
+    tags: ['açma', 'tablo', 'yardımcı'],
+    complexity: 'basic',
+    usage: 'Tablo öğelerini bireysel argümanlara dönüştürmek için kullanın',
+    seeAlso: ['checkInput', 'deepcopy']
+  },
+  {
+    name: 'validateNumber',
+    description: 'Bir değerin geçerli bir sayı olduğunu ve isteğe bağlı olarak bir aralık içinde olduğunu doğrular.',
+    parameters: [
+      { name: 'value', type: 'any', description: 'Doğrulanacak değer' },
+      { name: 'min', type: 'number', description: 'İzin verilen minimum değer', optional: true },
+      { name: 'max', type: 'number', description: 'İzin verilen maksimum değer', optional: true }
+    ],
+    returnType: 'boolean',
+    returnDescription: 'Değer aralık içinde geçerli bir sayıysa true',
+    example: 'local valid = ADekoLib.validateNumber(value, 0, 100)',
+    category: 'Analysis & Testing',
+    subcategory: 'Validation',
+    tags: ['doğrulama', 'sayı', 'aralık'],
+    complexity: 'basic',
+    usage: 'İşlemeden önce sayısal girişleri doğrulamak için kullanın',
+    seeAlso: ['areRoughlyEqual', 'checkFuzzy']
+  },
+  {
+    name: 'sortCCW',
+    description: 'Noktaları merkez etrafında saat yönünün tersine sıralar.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Sıralanacak nokta dizisi' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Saat yönünün tersine sıralanmış noktalar',
+    example: 'local sorted = ADekoLib.sortCCW(polygonPoints)',
+    category: 'Utilities',
+    subcategory: 'Sorting',
+    tags: ['sıralama', 'saat-yönü-tersi', 'poligon'],
+    complexity: 'intermediate',
+    usage: 'Alan hesaplamaları için tutarlı poligon sarma sağlamak için kullanın',
+    seeAlso: ['sortCW', 'center']
+  },
+  {
+    name: 'sortCW',
+    description: 'Noktaları merkez etrafında saat yönünde sıralar.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Sıralanacak nokta dizisi' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Saat yönünde sıralanmış noktalar',
+    example: 'local sorted = ADekoLib.sortCW(polygonPoints)',
+    category: 'Utilities',
+    subcategory: 'Sorting',
+    tags: ['sıralama', 'saat-yönü', 'poligon'],
+    complexity: 'intermediate',
+    usage: 'İşleme operasyonları için tutarlı poligon sarma sağlamak için kullanın',
+    seeAlso: ['sortCCW', 'center']
+  },
+  {
+    name: 'yIntercept',
+    description: 'İki noktadan geçen bir çizginin Y-kesişimini hesaplar.',
+    parameters: [
+      { name: 'x1', type: 'number', description: 'İlk noktanın X koordinatı' },
+      { name: 'y1', type: 'number', description: 'İlk noktanın Y koordinatı' },
+      { name: 'x2', type: 'number', description: 'İkinci noktanın X koordinatı' },
+      { name: 'y2', type: 'number', description: 'İkinci noktanın Y koordinatı' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Y-kesişim değeri',
+    example: 'local b = ADekoLib.yIntercept(0, 5, 10, 15) -- 5 döndürür',
+    category: 'Point & Vector Operations',
+    subcategory: 'Line Operations',
+    tags: ['kesişim', 'çizgi', 'geometri'],
+    complexity: 'basic',
+    usage: 'Bir çizginin Y eksenini nerede kestiğini bulmak için kullanın',
+    seeAlso: ['slope', 'lineLineIntersection']
+  },
+  {
+    name: 'radius',
+    description: 'Üç noktadan geçen bir dairenin yarıçapını hesaplar.',
+    parameters: [
+      { name: 'p1', type: 'table', description: 'İlk nokta {x, y}' },
+      { name: 'p2', type: 'table', description: 'İkinci nokta {x, y}' },
+      { name: 'p3', type: 'table', description: 'Üçüncü nokta {x, y}' }
+    ],
+    returnType: 'number',
+    returnDescription: 'Dairenin yarıçapı',
+    example: 'local r = ADekoLib.radius({0, 0}, {10, 0}, {5, 5})',
+    category: 'Point & Vector Operations',
+    subcategory: 'Circle Operations',
+    tags: ['yarıçap', 'daire', 'geometri'],
+    complexity: 'intermediate',
+    usage: 'Üç nokta ile tanımlanan bir dairenin yarıçapını bulmak için kullanın',
+    seeAlso: ['bulge', 'circularArc']
+  },
+  {
+    name: 'scaleDepth',
+    description: 'Noktaların Z koordinatlarını (derinlik) bir faktörle ölçeklendirir.',
+    parameters: [
+      { name: 'points', type: 'table', description: 'Z koordinatlı nokta dizisi' },
+      { name: 'scaleFactor', type: 'number', description: 'Z koordinatları için ölçek faktörü' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Ölçeklendirilmiş Z koordinatlı noktalar',
+    example: 'local scaled = ADekoLib.scaleDepth(points3D, 2.0)',
+    category: 'Point & Vector Operations',
+    subcategory: 'Vector Operations',
+    tags: ['ölçeklendirme', 'derinlik', '3D'],
+    complexity: 'basic',
+    usage: '3D operasyonlar için derinlik değerlerini ayarlamak için kullanın',
+    seeAlso: ['vecScale', 'removeBackgroundAtTop']
+  },
+
+  // YENİ EKLENMİŞ FONKSİYONLAR - İKİNCİ GRUP (129-135)
+  {
+    name: 'parseModelParameters',
+    description: 'Model parametrelerini string formatından global değişkenlere ayrıştırır.',
+    parameters: [
+      { name: 'parameterString', type: 'string', description: 'Parametre tanımlarını içeren string' }
+    ],
+    returnType: 'boolean',
+    returnDescription: 'Ayrıştırma başarılıysa true',
+    example: 'ADekoLib.parseModelParameters("X=100;Y=50;thickness=18")',
+    category: 'Utilities',
+    subcategory: 'Data Processing',
+    tags: ['ayrıştırma', 'parametreler', 'string'],
+    complexity: 'intermediate',
+    usage: 'Dış kaynaklardan parametre stringlerini ayrıştırmak için kullanın',
+    seeAlso: ['split', 'validateNumber']
+  },
+  {
+    name: 'menderes1',
+    description: 'Menderes desen tip 1 oluşturur - geleneksel Türk dekoratif deseni.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Başlangıç noktası {x, y}' },
+      { name: 'endPoint', type: 'table', description: 'Bitiş noktası {x, y}' },
+      { name: 'amplitude', type: 'number', description: 'Desen genliği' },
+      { name: 'frequency', type: 'number', description: 'Desen frekansı' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Deseni oluşturan nokta dizisi',
+    example: 'local pattern = ADekoLib.menderes1({0, 0}, {100, 0}, 10, 5)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['menderes', 'desen', 'dekoratif'],
+    complexity: 'intermediate',
+    usage: 'Geleneksel Türk dekoratif desenleri oluşturmak için kullanın',
+    seeAlso: ['menderes2', 'menderes3']
+  },
+  {
+    name: 'menderes2',
+    description: 'Menderes desen tip 2 oluşturur - geleneksel Türk dekoratif deseninin varyasyonu.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Başlangıç noktası {x, y}' },
+      { name: 'endPoint', type: 'table', description: 'Bitiş noktası {x, y}' },
+      { name: 'amplitude', type: 'number', description: 'Desen genliği' },
+      { name: 'frequency', type: 'number', description: 'Desen frekansı' },
+      { name: 'phase', type: 'number', description: 'Faz kayması', optional: true, defaultValue: 0 }
+    ],
+    returnType: 'table',
+    returnDescription: 'Deseni oluşturan nokta dizisi',
+    example: 'local pattern = ADekoLib.menderes2({0, 0}, {100, 0}, 10, 5, 45)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['menderes', 'desen', 'dekoratif'],
+    complexity: 'intermediate',
+    usage: 'Geleneksel Türk dekoratif desenlerinin varyasyonunu oluşturmak için kullanın',
+    seeAlso: ['menderes1', 'menderes3']
+  },
+  {
+    name: 'menderes3',
+    description: 'Menderes desen tip 3 oluşturur - geleneksel Türk dekoratif deseninin karmaşık varyasyonu.',
+    parameters: [
+      { name: 'startPoint', type: 'table', description: 'Başlangıç noktası {x, y}' },
+      { name: 'endPoint', type: 'table', description: 'Bitiş noktası {x, y}' },
+      { name: 'amplitude', type: 'number', description: 'Desen genliği' },
+      { name: 'frequency', type: 'number', description: 'Desen frekansı' },
+      { name: 'complexity', type: 'number', description: 'Desen karmaşıklık faktörü' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Deseni oluşturan nokta dizisi',
+    example: 'local pattern = ADekoLib.menderes3({0, 0}, {100, 0}, 10, 5, 2)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['menderes', 'desen', 'dekoratif', 'karmaşık'],
+    complexity: 'advanced',
+    usage: 'Karmaşık geleneksel Türk dekoratif desenleri oluşturmak için kullanın',
+    seeAlso: ['menderes1', 'menderes2']
+  },
+  {
+    name: 'menderes4',
+    description: 'Menderes desen tip 4 oluşturur - geleneksel Türk dekoratif deseninin geometrik varyasyonu.',
+    parameters: [
+      { name: 'centerPoint', type: 'table', description: 'Merkez nokta {x, y}' },
+      { name: 'radius', type: 'number', description: 'Desen yarıçapı' },
+      { name: 'segments', type: 'number', description: 'Desen segment sayısı' },
+      { name: 'depth', type: 'number', description: 'Desen derinliği' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Dairesel deseni oluşturan nokta dizisi',
+    example: 'local pattern = ADekoLib.menderes4({50, 50}, 30, 8, 5)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['menderes', 'desen', 'dairesel', 'geometrik'],
+    complexity: 'advanced',
+    usage: 'Dairesel geometrik dekoratif desenler oluşturmak için kullanın',
+    seeAlso: ['menderes1', 'circularArc']
+  },
+  {
+    name: 'menderes5',
+    description: 'Menderes desen tip 5 oluşturur - geleneksel Türk dekoratif deseninin spiral varyasyonu.',
+    parameters: [
+      { name: 'centerPoint', type: 'table', description: 'Merkez nokta {x, y}' },
+      { name: 'startRadius', type: 'number', description: 'Başlangıç yarıçapı' },
+      { name: 'endRadius', type: 'number', description: 'Bitiş yarıçapı' },
+      { name: 'turns', type: 'number', description: 'Spiral dönüş sayısı' },
+      { name: 'segments', type: 'number', description: 'Dönüş başına segment sayısı' }
+    ],
+    returnType: 'table',
+    returnDescription: 'Spiral deseni oluşturan nokta dizisi',
+    example: 'local pattern = ADekoLib.menderes5({50, 50}, 10, 40, 3, 16)',
+    category: 'Decorative Patterns',
+    subcategory: 'Menderes Patterns',
+    tags: ['menderes', 'desen', 'spiral'],
+    complexity: 'advanced',
+    usage: 'Spiral dekoratif desenler oluşturmak için kullanın',
+    seeAlso: ['menderes4', 'ellipticArc']
+  },
+  {
+    name: 'productSize',
+    description: 'Mevcut üründeki parça sayısını döndürür.',
+    parameters: [],
+    returnType: 'number',
+    returnDescription: 'Üründeki parça sayısı',
+    example: 'local partCount = ADekoLib.productSize()',
+    category: 'Analysis & Testing',
+    subcategory: 'Data Query',
+    tags: ['ürün', 'sayım', 'parçalar'],
+    complexity: 'basic',
+    usage: 'Mevcut üründeki toplam parça sayısını almak için kullanın',
+    seeAlso: ['dataSize', 'partName']
   }
 ]

@@ -114,6 +114,22 @@ export default {
     message: 'Mesaj'
   },
 
+  // Araç ipuçları ve IntelliSense
+  tooltips: {
+    adekoFunction: 'AdekoLib Fonksiyonu',
+    luaFunction: 'Lua Standart Fonksiyonu',
+    luaKeyword: 'Lua Anahtar Kelimesi',
+    parameters: 'Parametreler',
+    returns: 'Döndürür',
+    example: 'Örnek',
+    category: 'Kategori',
+    complexity: 'Karmaşıklık',
+    seeAlso: 'Ayrıca Bakınız',
+    module: 'Modül',
+    syntax: 'Sözdizimi',
+    description: 'Açıklama'
+  },
+
 
 
   // Navigasyon sekmeleri
