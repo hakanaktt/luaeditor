@@ -10,6 +10,44 @@
         </div>
       </div>
       <div class="flex items-center space-x-1">
+        <!-- Turtle Graphics Controls -->
+        <button
+          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          @click="resetView"
+          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+          :title="$t('turtleCanvas.resetView')"
+        >
+          <RotateCcw :size="14" />
+        </button>
+        <button
+          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          @click="zoomIn"
+          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+          :title="$t('turtleCanvas.zoomIn')"
+        >
+          <ZoomIn :size="14" />
+        </button>
+        <button
+          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          @click="zoomOut"
+          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+          :title="$t('turtleCanvas.zoomOut')"
+        >
+          <ZoomOut :size="14" />
+        </button>
+
+        <!-- Separator -->
+        <div v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized" class="w-px h-4 bg-gray-300"></div>
+
+        <!-- Panel Controls -->
+        <button
+          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          @click="minimizeTurtleCanvas"
+          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+          :title="$t('turtleCanvas.minimize')"
+        >
+          <Minimize2 :size="14" />
+        </button>
         <button
           v-if="drawCommands.length > 0"
           @click="clearVisualization"
@@ -38,8 +76,24 @@
           <p class="text-xs text-gray-400 mt-1">{{ $t('visualization.runScriptHint') }}</p>
         </div>
       </div>
+      <div v-else-if="isTurtleCanvasMinimized" class="minimized-turtle-canvas">
+        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded">
+          <div class="flex items-center space-x-2">
+            <Palette :size="16" class="text-blue-600" />
+            <span class="text-sm font-medium text-gray-700">{{ $t('visualization.turtleGraphicsMinimized') }}</span>
+            <span class="text-xs text-gray-500">{{ drawCommands.length }} {{ $t('turtleCanvas.commands') }}</span>
+          </div>
+          <button
+            @click="restoreTurtleCanvas"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('visualization.restore')"
+          >
+            <Maximize2 :size="14" />
+          </button>
+        </div>
+      </div>
       <div v-else class="turtle-graphics-container">
-        <TurtleCanvas :draw-commands="drawCommands" />
+        <TurtleCanvas ref="turtleCanvasRef" :draw-commands="drawCommands" />
       </div>
     </div>
   </div>
@@ -47,7 +101,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Palette, Trash2, Maximize2, Minimize2 } from 'lucide-vue-next'
+import { Palette, Trash2, Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut } from 'lucide-vue-next'
 import TurtleCanvas from './TurtleCanvas.vue'
 import { useI18n } from '@/composables/useI18n'
 
@@ -75,18 +129,49 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'clear-visualization': []
+  'toggle-expanded': [expanded: boolean]
 }>()
 
 const drawCommands = ref<DrawCommand[]>([])
-const isExpanded = ref(false)
+const isExpanded = ref(true)  // Start maximized
+const isTurtleCanvasMinimized = ref(false)
+const turtleCanvasRef = ref<InstanceType<typeof TurtleCanvas> | null>(null)
 
 const clearVisualization = () => {
   drawCommands.value = []
   emit('clear-visualization')
 }
 
+const minimizeTurtleCanvas = () => {
+  isTurtleCanvasMinimized.value = true
+}
+
+const restoreTurtleCanvas = () => {
+  isTurtleCanvasMinimized.value = false
+}
+
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
+  emit('toggle-expanded', isExpanded.value)
+}
+
+// Turtle graphics control functions
+const resetView = () => {
+  if (turtleCanvasRef.value) {
+    turtleCanvasRef.value.resetView()
+  }
+}
+
+const zoomIn = () => {
+  if (turtleCanvasRef.value) {
+    turtleCanvasRef.value.zoomIn()
+  }
+}
+
+const zoomOut = () => {
+  if (turtleCanvasRef.value) {
+    turtleCanvasRef.value.zoomOut()
+  }
 }
 
 // Watch for draw commands prop changes
@@ -121,7 +206,8 @@ defineExpose({
 }
 
 .panel-content.expanded {
-  @apply fixed inset-4 z-50 bg-white border border-gray-300 rounded-lg shadow-lg;
+  @apply flex-1;
+  /* Cover the whole available area, not modal */
 }
 
 .no-visualization {
@@ -130,5 +216,9 @@ defineExpose({
 
 .turtle-graphics-container {
   @apply h-full;
+}
+
+.minimized-turtle-canvas {
+  @apply p-2;
 }
 </style>

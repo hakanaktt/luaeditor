@@ -11,21 +11,9 @@
         </div>
         <div v-else-if="lastExecutionTime" class="flex items-center space-x-2 text-xs text-gray-500">
           <span>{{ $t('debugConsole.executionTime', { time: lastExecutionTime }) }}</span>
-          <span v-if="drawCommands.length > 0" class="text-green-600">
-            🎨 {{ drawCommands.length }} draw commands
-          </span>
         </div>
       </div>
       <div class="flex items-center space-x-1">
-        <button
-          v-if="drawCommands.length > 0"
-          @click="toggleTurtleGraphics"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :class="{ 'text-blue-600': showTurtleGraphics }"
-          :title="$t('debugConsole.toggleTurtleGraphics')"
-        >
-          <Palette :size="14" />
-        </button>
         <button
           @click="clearConsole"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
@@ -52,13 +40,8 @@
 
     <!-- Console Content -->
     <div v-if="!isCollapsed" class="console-content">
-      <!-- Turtle Graphics Canvas -->
-      <div v-if="showTurtleGraphics && drawCommands.length > 0" class="turtle-graphics-container">
-        <TurtleCanvas :draw-commands="drawCommands" />
-      </div>
-
       <!-- Text Output -->
-      <div ref="outputContainer" class="output-container" :class="{ 'with-graphics': showTurtleGraphics && drawCommands.length > 0 }">
+      <div ref="outputContainer" class="output-container">
         <div v-if="outputs.length === 0" class="no-output">
           {{ $t('debugConsole.noOutput') }}
         </div>
@@ -82,8 +65,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, watch } from 'vue'
-import { Terminal, Trash2, Copy, ChevronDown, ChevronUp, Palette } from 'lucide-vue-next'
-import TurtleCanvas from './TurtleCanvas.vue'
+import { Terminal, Trash2, Copy, ChevronDown, ChevronUp } from 'lucide-vue-next'
 
 interface DebugOutput {
   type: 'info' | 'success' | 'error'
@@ -122,12 +104,7 @@ const isExecuting = ref(false)
 const lastExecutionTime = ref<number | null>(null)
 const outputs = ref<DebugOutput[]>([])
 const outputContainer = ref<HTMLElement>()
-const showTurtleGraphics = ref(true)
 const drawCommands = ref<DrawCommand[]>([])
-
-const toggleTurtleGraphics = () => {
-  showTurtleGraphics.value = !showTurtleGraphics.value
-}
 
 const addOutput = (type: DebugOutput['type'], content: string) => {
   outputs.value.push({
@@ -185,16 +162,7 @@ const setExecutionTime = (timeMs: number) => {
 }
 
 const setDrawCommands = (commands: DrawCommand[]) => {
-  console.log('DebugConsole setDrawCommands called with:', JSON.stringify(commands, null, 2))
-  console.log('Stack trace:', new Error().stack)
   drawCommands.value = commands
-  console.log('DebugConsole local drawCommands.value after setting:', JSON.stringify(drawCommands.value, null, 2))
-  if (commands.length > 0) {
-    showTurtleGraphics.value = true
-    console.log('Showing turtle graphics because we have', commands.length, 'commands')
-  } else {
-    console.log('Not showing turtle graphics - no commands')
-  }
 }
 
 // Watch for visibility changes
@@ -242,20 +210,10 @@ defineExpose({
   height: calc(100% - 40px);
 }
 
-.turtle-graphics-container {
-  @apply border-b border-gray-200;
-  height: 300px;
-  background-color: #f8f9fa;
-}
-
 .output-container {
   @apply flex-1 overflow-y-auto p-2 font-mono text-sm;
   background-color: #1e1e1e;
   color: #d4d4d4;
-}
-
-.output-container.with-graphics {
-  height: calc(100% - 300px);
 }
 
 .no-output {

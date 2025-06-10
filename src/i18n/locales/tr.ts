@@ -1,10 +1,10 @@
 export default {
   // Uygulama başlığı ve marka
   app: {
-    title: 'Lua Makro Editörü',
-    subtitle: 'Adeko Kütüphaneleri için Lua Makro Editörü',
-    welcome: 'Lua Makro Editörüne Hoş Geldiniz',
-    welcomeMessage: 'Düzenlemeye başlamak için bir dosya açın veya AdekoLib fonksiyonlarına göz atın',
+    title: 'Adeko Lua Editörü',
+    subtitle: 'Adeko CAM Kütüphaneleri için Lua Editörü',
+    welcome: 'Adeko Lua Editörüne Hoş Geldiniz',
+    welcomeMessage: 'Düzenlemeye başlamak için bir dosya açın veya AdekoCAM fonksiyonlarına göz atın',
     noFileOpen: 'Açık dosya yok'
   },
 
@@ -110,7 +110,7 @@ export default {
 
   // Fonksiyon tarayıcısı
   functions: {
-    searchPlaceholder: 'Fonksiyon ara...',
+    searchPlaceholder: 'Dosyaları ara...',
     allCategories: 'Tüm Kategoriler',
     allLevels: 'Tüm Seviyeler',
     basic: 'Temel',
@@ -129,7 +129,7 @@ export default {
   // Dosya işlemleri
   files: {
     luaFiles: 'Lua Dosyaları',
-    newFileComment: '-- Yeni Lua dosyası\n-- Adeko makro kodunuzu buraya ekleyin\n\n'
+    newFileComment: '-- Yeni Lua dosyası\n-- Kodunuzu buraya ekleyin\n\n'
   },
 
   // Dosya Gezgini Bağlam Menüsü
@@ -181,8 +181,8 @@ export default {
   // Durum mesajları
   status: {
     modified: '●',
-    luaMacroEditor: 'Lua Makro Editörü',
-    initialized: 'Lua Makro Editörü başlatıldı',
+    luaMacroEditor: 'Adeko Lua Editörü',
+    initialized: 'Adeko Lua Editörü başlatıldı',
     directoryNotExist: 'Lua kütüphane dizini mevcut değil:'
   },
 
@@ -204,19 +204,20 @@ export default {
     clearConsole: 'Konsolu Temizle',
     copyOutput: 'Çıktıyı Kopyala',
     saveOutput: 'Çıktıyı Dosyaya Kaydet',
-    toggleTurtleGraphics: 'Kaplumbağa Grafiklerini Aç/Kapat',
-    debugMode: 'ZeroBrane-tarzı Hata Ayıklama Modu',
+    toggleTurtleGraphics: 'Grafikleri Aç/Kapat',
+    debugMode: 'Hata Ayıklama Modu',
     faceLayout: '6-Yüz Düzeni Aktif',
     drawCommands: 'çizim komutu yakalandı'
   },
 
-  // Kaplumbağa Tuvali
+  // Turtle Canvas
   turtleCanvas: {
-    title: 'Kaplumbağa Grafikleri',
+    title: '2D Grafikler',
     commands: 'komut',
     resetView: 'Görünümü Sıfırla',
     zoomIn: 'Yakınlaştır',
-    zoomOut: 'Uzaklaştır'
+    zoomOut: 'Uzaklaştır',
+    minimize: 'Küçült'
   },
 
   // Görselleştirme Paneli
@@ -227,7 +228,9 @@ export default {
     expand: 'Görselleştirmeyi Genişlet',
     collapse: 'Görselleştirmeyi Daralt',
     noData: 'Görselleştirme verisi yok',
-    runScriptHint: 'Kaplumbağa grafiklerini görmek için hata ayıklama modunda bir betik çalıştırın'
+    runScriptHint: 'Turtle grafiklerini görmek için hata ayıklama modunda bir betik çalıştırın',
+    turtleGraphicsMinimized: 'Turtle Grafikleri (Küçültülmüş)',
+    restore: 'Geri Yükle'
   },
 
   // Araç çubuğu

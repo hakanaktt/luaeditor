@@ -1,10 +1,10 @@
 export default {
   // Application title and branding
   app: {
-    title: 'Lua Macro Editor',
-    subtitle: 'Lua Macro Editor for Adeko Libraries',
-    welcome: 'Welcome to Lua Macro Editor',
-    welcomeMessage: 'Open a file to start editing or browse AdekoLib functions',
+    title: 'Adeko Lua Editor',
+    subtitle: 'Lua Editor for Adeko CAM Libraries',
+    welcome: 'Welcome to Adeko Lua Editor',
+    welcomeMessage: 'Open a file to start editing or browse AdekoCAM functions',
     noFileOpen: 'No file open'
   },
 
@@ -46,7 +46,7 @@ export default {
   // View menu
   viewMenu: {
     toggleSidebar: 'Toggle Sidebar',
-    toggleFunctionBrowser: 'Toggle Function Browser',
+    toggleFunctionBrowser: 'Toggle Functions Browser',
     zoomIn: 'Zoom In',
     zoomOut: 'Zoom Out',
     resetZoom: 'Reset Zoom',
@@ -110,7 +110,7 @@ export default {
 
   // Function browser
   functions: {
-    searchPlaceholder: 'Search functions...',
+    searchPlaceholder: 'Search files...',
     allCategories: 'All Categories',
     allLevels: 'All Levels',
     basic: 'Basic',
@@ -129,7 +129,7 @@ export default {
   // File operations
   files: {
     luaFiles: 'Lua Files',
-    newFileComment: '-- New Lua file\n-- Add your Adeko macro code here\n\n'
+    newFileComment: '-- New Lua file\n-- Add your code here\n\n'
   },
 
   // File Explorer Context Menu
@@ -181,8 +181,8 @@ export default {
   // Status messages
   status: {
     modified: '●',
-    luaMacroEditor: 'Lua Macro Editor',
-    initialized: 'Lua Macro Editor initialized',
+    luaMacroEditor: 'Adeko Lua Editor',
+    initialized: 'Adeko Lua Editor initialized',
     directoryNotExist: 'Lua library directory does not exist:'
   },
 
@@ -204,19 +204,20 @@ export default {
     clearConsole: 'Clear Console',
     copyOutput: 'Copy Output',
     saveOutput: 'Save Output to File',
-    toggleTurtleGraphics: 'Toggle Turtle Graphics',
-    debugMode: 'ZeroBrane-style Debug Mode',
+    toggleTurtleGraphics: 'Toggle Graphics',
+    debugMode: 'Debug Mode',
     faceLayout: '6-Face Layout Active',
     drawCommands: 'draw commands captured'
   },
 
   // Turtle Canvas
   turtleCanvas: {
-    title: 'Turtle Graphics',
+    title: '2D Graphics',
     commands: 'commands',
     resetView: 'Reset View',
     zoomIn: 'Zoom In',
-    zoomOut: 'Zoom Out'
+    zoomOut: 'Zoom Out',
+    minimize: 'Minimize'
   },
 
   // Visualization Panel
@@ -227,7 +228,9 @@ export default {
     expand: 'Expand Visualization',
     collapse: 'Collapse Visualization',
     noData: 'No visualization data',
-    runScriptHint: 'Run a script with debug mode to see turtle graphics'
+    runScriptHint: 'Run a script with debug mode to see turtle graphics',
+    turtleGraphicsMinimized: 'Turtle Graphics (Minimized)',
+    restore: 'Restore'
   },
 
   // Toolbar

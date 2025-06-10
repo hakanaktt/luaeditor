@@ -67,7 +67,6 @@
           v-for="item in filteredItems"
           :key="item.path"
           @click="handleItemClick(item, $event)"
-          @dblclick="handleItemDoubleClick(item)"
           @contextmenu.prevent="handleContextMenu(item, $event)"
           @keydown="handleKeyDown(item, $event)"
           tabindex="0"
@@ -564,23 +563,24 @@ const handleItemClick = (item: FileItem, event: MouseEvent): void => {
       selectedItems.value = fileItems.value.slice(start, end + 1).map(f => f.path)
     }
   } else {
-    // Single select
+    // Single click - open files and folders directly
     selectedItems.value = [item.path]
+
+    // Open the item immediately on single click
+    if (item.isDirectory) {
+      // For directories, toggle expansion
+      toggleFolder(item)
+    } else if (item.name.endsWith('.lua')) {
+      // Load .lua files for script writing and debugging
+      emit('file-selected', item.path)
+    } else {
+      // For model files and other files, just select them
+      emit('file-selected', item.path)
+    }
   }
 }
 
-const handleItemDoubleClick = (item: FileItem): void => {
-  if (item.isDirectory) {
-    // For directories, toggle expansion instead of navigating
-    toggleFolder(item)
-  } else if (item.name.endsWith('.lua')) {
-    // Load .lua files for script writing and debugging
-    emit('file-selected', item.path)
-  } else {
-    // For model files and other files, just select them
-    emit('file-selected', item.path)
-  }
-}
+
 
 const handleContextMenu = (item: FileItem, event: MouseEvent): void => {
   // Select the item if not already selected
@@ -616,7 +616,12 @@ const handleKeyDown = (item: FileItem, event: KeyboardEvent): void => {
       refreshDirectory()
       break
     case 'Enter':
-      handleItemDoubleClick(item)
+      // Use single-click behavior for Enter key
+      if (item.isDirectory) {
+        toggleFolder(item)
+      } else {
+        emit('file-selected', item.path)
+      }
       break
   }
 

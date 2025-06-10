@@ -1,52 +1,20 @@
 <template>
   <div class="turtle-canvas-container">
-    <div class="canvas-header">
-      <div class="flex items-center space-x-2">
-        <Palette :size="16" class="text-blue-600" />
-        <span class="text-sm font-medium text-gray-700">{{ $t('turtleCanvas.title') }}</span>
-        <span class="text-xs text-gray-500">{{ drawCommands.length }} {{ $t('turtleCanvas.commands') }}</span>
-      </div>
-      <div class="flex items-center space-x-1">
-        <button
-          @click="resetView"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('turtleCanvas.resetView')"
-        >
-          <RotateCcw :size="14" />
-        </button>
-        <button
-          @click="zoomIn"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('turtleCanvas.zoomIn')"
-        >
-          <ZoomIn :size="14" />
-        </button>
-        <button
-          @click="zoomOut"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('turtleCanvas.zoomOut')"
-        >
-          <ZoomOut :size="14" />
-        </button>
-      </div>
-    </div>
-    <div class="canvas-content">
-      <canvas
-        ref="canvasRef"
-        class="turtle-canvas"
-        @wheel="handleWheel"
-        @mousedown="handleMouseDown"
-        @mousemove="handleMouseMove"
-        @mouseup="handleMouseUp"
-        @mouseleave="handleMouseUp"
-      ></canvas>
-    </div>
+    <canvas
+      ref="canvasRef"
+      class="turtle-canvas"
+      @wheel="handleWheel"
+      @mousedown="handleMouseDown"
+      @mousemove="handleMouseMove"
+      @mouseup="handleMouseUp"
+      @mouseleave="handleMouseUp"
+    ></canvas>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue'
-import { Palette, RotateCcw, ZoomIn, ZoomOut } from 'lucide-vue-next'
+
 
 interface DrawCommand {
   command_type: string
@@ -90,6 +58,8 @@ const zoomOut = () => {
   scale.value = Math.max(scale.value / 1.2, 0.1)
   drawCanvas()
 }
+
+
 
 const handleWheel = (event: WheelEvent) => {
   event.preventDefault()
@@ -181,11 +151,26 @@ const drawCanvas = () => {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // Set up coordinate system (center origin)
+  // Set up coordinate system (ADekoLib-compatible origin)
   ctx.save()
-  ctx.translate(canvas.width / 2 + offsetX.value, canvas.height / 2 + offsetY.value)
-  ctx.scale(scale.value, scale.value)
-  console.log('Canvas transform applied: translate', canvas.width / 2 + offsetX.value, canvas.height / 2 + offsetY.value, 'scale', scale.value)
+
+  // Check if we have ADekoLib-style face layout (door schemas)
+  const hasADekoLibLayout = props.drawCommands.some(cmd =>
+    cmd.command_type === 'text' &&
+    ['Left', 'Right', 'Top', 'Bottom', 'Front', 'Rear'].includes(cmd.text)
+  )
+
+  if (hasADekoLibLayout) {
+    // Use top-left origin for ADekoLib face layout compatibility
+    ctx.translate(offsetX.value, offsetY.value)
+    ctx.scale(scale.value, scale.value)
+    console.log('Canvas transform applied (ADekoLib mode): translate', offsetX.value, offsetY.value, 'scale', scale.value)
+  } else {
+    // Use center origin for simple turtle graphics
+    ctx.translate(canvas.width / 2 + offsetX.value, canvas.height / 2 + offsetY.value)
+    ctx.scale(scale.value, scale.value)
+    console.log('Canvas transform applied (center mode): translate', canvas.width / 2 + offsetX.value, canvas.height / 2 + offsetY.value, 'scale', scale.value)
+  }
 
   // Draw grid
   drawGrid(ctx, canvas.width, canvas.height)
@@ -205,45 +190,68 @@ const drawCanvas = () => {
 
 const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
   const gridSize = 20
-  const centerX = -offsetX.value / scale.value
-  const centerY = -offsetY.value / scale.value
-  const halfWidth = width / (2 * scale.value)
-  const halfHeight = height / (2 * scale.value)
-  
+
+  // Check if we have ADekoLib-style face layout
+  const hasADekoLibLayout = props.drawCommands.some(cmd =>
+    cmd.command_type === 'text' &&
+    ['Left', 'Right', 'Top', 'Bottom', 'Front', 'Rear'].includes(cmd.text)
+  )
+
+  let centerX, centerY, halfWidth, halfHeight
+
+  if (hasADekoLibLayout) {
+    // Top-left origin coordinate system
+    centerX = -offsetX.value / scale.value
+    centerY = -offsetY.value / scale.value
+    halfWidth = width / scale.value
+    halfHeight = height / scale.value
+  } else {
+    // Center origin coordinate system
+    centerX = -offsetX.value / scale.value
+    centerY = -offsetY.value / scale.value
+    halfWidth = width / (2 * scale.value)
+    halfHeight = height / (2 * scale.value)
+  }
+
   ctx.strokeStyle = '#e0e0e0'
   ctx.lineWidth = 0.5
-  
+
   // Vertical lines
-  for (let x = Math.floor((centerX - halfWidth) / gridSize) * gridSize; x <= centerX + halfWidth; x += gridSize) {
+  const startX = hasADekoLibLayout ? centerX : centerX - halfWidth
+  const endX = hasADekoLibLayout ? centerX + halfWidth : centerX + halfWidth
+  const startY = hasADekoLibLayout ? centerY : centerY - halfHeight
+  const endY = hasADekoLibLayout ? centerY + halfHeight : centerY + halfHeight
+
+  for (let x = Math.floor(startX / gridSize) * gridSize; x <= endX; x += gridSize) {
     ctx.beginPath()
-    ctx.moveTo(x, centerY - halfHeight)
-    ctx.lineTo(x, centerY + halfHeight)
+    ctx.moveTo(x, startY)
+    ctx.lineTo(x, endY)
     ctx.stroke()
   }
-  
+
   // Horizontal lines
-  for (let y = Math.floor((centerY - halfHeight) / gridSize) * gridSize; y <= centerY + halfHeight; y += gridSize) {
+  for (let y = Math.floor(startY / gridSize) * gridSize; y <= endY; y += gridSize) {
     ctx.beginPath()
-    ctx.moveTo(centerX - halfWidth, y)
-    ctx.lineTo(centerX + halfWidth, y)
+    ctx.moveTo(startX, y)
+    ctx.lineTo(endX, y)
     ctx.stroke()
   }
-  
+
   // Draw axes with different colors for better visibility
   // X-axis (red)
   ctx.strokeStyle = '#ff6b6b'
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(centerX - halfWidth, 0)
-  ctx.lineTo(centerX + halfWidth, 0)
+  ctx.moveTo(startX, 0)
+  ctx.lineTo(endX, 0)
   ctx.stroke()
 
   // Y-axis (teal)
   ctx.strokeStyle = '#4ecdc4'
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(0, centerY - halfHeight)
-  ctx.lineTo(0, centerY + halfHeight)
+  ctx.moveTo(0, startY)
+  ctx.lineTo(0, endY)
   ctx.stroke()
 
   // Add axis labels if scale is appropriate
@@ -254,12 +262,12 @@ const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) 
     ctx.textBaseline = 'middle'
 
     // X-axis label
-    ctx.fillText('X', centerX + halfWidth - 20, -15)
+    ctx.fillText('X', endX - 20, -15)
 
     // Y-axis label
     ctx.save()
     ctx.rotate(-Math.PI / 2)
-    ctx.fillText('Y', 15, -(centerY + halfHeight - 20))
+    ctx.fillText('Y', 15, -endY + 20)
     ctx.restore()
 
     // Origin marker
@@ -284,18 +292,23 @@ const drawFaceLayoutGuides = (ctx: CanvasRenderingContext2D) => {
     ctx.setLineDash([5, 5])
 
     // Draw face boundary indicators based on ADekoDebugMode.lua layout
-    // These are approximate positions based on the offset calculations
+    // Using the exact coordinates from ADekoDebugMode.lua with offset=20, materialThickness=18
+    const offset = 20
+    const materialThickness = 18
+    const X = 500  // Default cabinet width
+    const Y = 700  // Default cabinet height
+
     const faceRegions = [
-      { name: 'Left', x: 40, y: 20, width: 18, height: 700 },
-      { name: 'Rear', x: 40, y: 758, width: 500, height: 18 },
-      { name: 'Front', x: 598, y: 796, width: 18, height: 500 },
-      { name: 'Right', x: 540, y: 796, width: 18, height: 700 },
-      { name: 'Top', x: 40, y: 796, width: 500, height: 700 },
-      { name: 'Bottom', x: 638, y: 796, width: 500, height: 700 }
+      { name: 'Left', x: 20 + offset, y: offset, width: materialThickness, height: Y },
+      { name: 'Rear', x: 20 + offset, y: 2 * offset + materialThickness, width: X, height: materialThickness },
+      { name: 'Front', x: 20 + 3 * offset + X + materialThickness, y: 3 * offset + 2 * materialThickness, width: materialThickness, height: X },
+      { name: 'Right', x: 20 + 2 * offset + X, y: 3 * offset + 2 * materialThickness, width: materialThickness, height: Y },
+      { name: 'Top', x: 20 + offset, y: 3 * offset + 2 * materialThickness, width: X, height: Y },
+      { name: 'Bottom', x: 20 + 4 * offset + X + 2 * materialThickness, y: 3 * offset + 2 * materialThickness, width: X, height: Y }
     ]
 
     faceRegions.forEach(face => {
-      ctx.strokeRect(face.x, -face.y - face.height, face.width, face.height)
+      ctx.strokeRect(face.x, face.y, face.width, face.height)
     })
 
     ctx.setLineDash([]) // Reset line dash
@@ -359,16 +372,23 @@ watch(() => props.drawCommands, (newCommands) => {
   })
 }, { immediate: true })
 
+// Expose functions for parent component
+defineExpose({
+  resetView,
+  zoomIn,
+  zoomOut
+})
+
 // Redraw on mount
 onMounted(() => {
   nextTick(() => {
     drawCanvas()
-    
+
     // Handle window resize
     const resizeObserver = new ResizeObserver(() => {
       drawCanvas()
     })
-    
+
     if (canvasRef.value?.parentElement) {
       resizeObserver.observe(canvasRef.value.parentElement)
     }
@@ -378,16 +398,7 @@ onMounted(() => {
 
 <style scoped>
 .turtle-canvas-container {
-  @apply h-full flex flex-col bg-white border border-gray-200 rounded;
-}
-
-.canvas-header {
-  @apply flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200;
-  height: 40px;
-}
-
-.canvas-content {
-  @apply flex-1 relative overflow-hidden;
+  @apply h-full relative overflow-hidden;
 }
 
 .turtle-canvas {

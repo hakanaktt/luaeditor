@@ -55,113 +55,127 @@
     
     <!-- Main Content Area -->
     <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar -->
-      <div class="flex">
-        <!-- Icon Bar -->
-        <div class="w-12 bg-gray-800 border-r border-gray-600 flex flex-col">
-          <!-- Navigation Icons -->
-          <div class="flex flex-col">
-            <button
-              :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
-                       activeTab === 'files' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
-              @click="activeTab = 'files'"
-              :title="$t('tabs.files')"
-            >
-              <FolderOpen :size="20" />
-            </button>
-            <button
-              :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
-                       activeTab === 'functions' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
-              @click="activeTab = 'functions'"
-              :title="$t('tabs.functions')"
-            >
-              <Code :size="20" />
-            </button>
-            <button
-              :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
-                       activeTab === 'visualization' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
-              @click="activeTab = 'visualization'"
-              :title="$t('tabs.visualization')"
-            >
-              <BarChart3 :size="20" />
-            </button>
-          </div>
-        </div>
-
-        <!-- Content Panel -->
-        <div
-          v-if="sidebarWidth > 48"
-          class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0 transition-all duration-75"
-          :class="{ 'select-none': isResizing }"
-          :style="{ width: (sidebarWidth - 48) + 'px' }"
-        >
-          <div class="h-full flex flex-col">
-            <!-- Panel Header -->
-            <div class="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-3">
-              <span class="text-sm font-medium text-gray-700">
-                {{ activeTab === 'files' ? $t('tabs.files') :
-                   activeTab === 'functions' ? $t('tabs.functions') :
-                   $t('tabs.visualization') }}
-              </span>
-            </div>
-
-            <!-- Panel Content -->
-            <div class="flex-1 overflow-hidden">
-              <FileExplorer
-                v-show="activeTab === 'files'"
-                :current-directory="currentDirectory"
-                :model-library-path="appSettings.model_library_path"
-                @file-selected="handleFileSelected"
-                @directory-changed="handleDirectoryChanged"
-              />
-              <FunctionBrowser
-                v-show="activeTab === 'functions'"
-                :on-insert-function="handleInsertFunction"
-              />
-              <VisualizationPanel
-                v-show="activeTab === 'visualization'"
-                ref="visualizationPanelRef"
-                :draw-commands="currentDrawCommands"
-                @clear-visualization="handleClearVisualization"
-              />
-            </div>
-          </div>
-
-          <!-- Resize Handle -->
-          <div
-            class="sidebar-resize-handle"
-            @mousedown="startResize"
-          ></div>
-        </div>
-      </div>
-
-      <!-- Editor Area -->
-      <div class="flex-1 flex flex-col">
-        <div class="flex-1 flex flex-col">
-          <Editor
-            v-if="currentFile"
-            ref="editorRef"
-            :file-content="currentFileContent"
-            :file-path="currentFile"
-            @content-changed="handleContentChanged"
-          />
-          <div v-else class="flex-1 flex items-center justify-center text-gray-500">
-            <div class="text-center">
-              <h2 class="text-xl mb-2">{{ $t('app.welcome') }}</h2>
-              <p>{{ $t('app.welcomeMessage') }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Debug Console -->
-        <DebugConsole
-          v-if="showDebugConsole"
-          ref="debugConsoleRef"
-          :is-visible="showDebugConsole"
+      <!-- Expanded Visualization Panel (covers whole area) -->
+      <div v-if="isVisualizationExpanded && activeTab === 'visualization'" class="flex-1">
+        <VisualizationPanel
+          ref="visualizationPanelRef"
           :draw-commands="currentDrawCommands"
-          @toggle-visibility="handleToggleDebugConsole"
+          @clear-visualization="handleClearVisualization"
+          @toggle-expanded="handleToggleVisualizationExpanded"
         />
       </div>
+
+      <!-- Normal Layout (when visualization is not expanded) -->
+      <template v-else>
+        <!-- Sidebar -->
+        <div class="flex">
+          <!-- Icon Bar -->
+          <div class="w-12 bg-gray-800 border-r border-gray-600 flex flex-col">
+            <!-- Navigation Icons -->
+            <div class="flex flex-col">
+              <button
+                :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
+                         activeTab === 'files' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
+                @click="activeTab = 'files'"
+                :title="$t('tabs.files')"
+              >
+                <FolderOpen :size="20" />
+              </button>
+              <button
+                :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
+                         activeTab === 'functions' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
+                @click="activeTab = 'functions'"
+                :title="$t('tabs.functions')"
+              >
+                <Code :size="20" />
+              </button>
+              <button
+                :class="['w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors',
+                         activeTab === 'visualization' ? 'text-white bg-gray-700 border-r-2 border-blue-500' : '']"
+                @click="activeTab = 'visualization'"
+                :title="$t('tabs.visualization')"
+              >
+                <BarChart3 :size="20" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Content Panel -->
+          <div
+            v-if="sidebarWidth > 48"
+            class="bg-gray-50 border-r border-gray-200 relative flex-shrink-0 transition-all duration-75"
+            :class="{ 'select-none': isResizing }"
+            :style="{ width: (sidebarWidth - 48) + 'px' }"
+          >
+            <div class="h-full flex flex-col">
+              <!-- Panel Header -->
+              <div class="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-3">
+                <span class="text-sm font-medium text-gray-700">
+                  {{ activeTab === 'files' ? $t('tabs.files') :
+                     activeTab === 'functions' ? $t('tabs.functions') :
+                     $t('tabs.visualization') }}
+                </span>
+              </div>
+
+              <!-- Panel Content -->
+              <div class="flex-1 overflow-hidden">
+                <FileExplorer
+                  v-show="activeTab === 'files'"
+                  :current-directory="currentDirectory"
+                  :model-library-path="appSettings.model_library_path"
+                  @file-selected="handleFileSelected"
+                  @directory-changed="handleDirectoryChanged"
+                />
+                <FunctionBrowser
+                  v-show="activeTab === 'functions'"
+                  :on-insert-function="handleInsertFunction"
+                />
+                <VisualizationPanel
+                  v-show="activeTab === 'visualization'"
+                  ref="visualizationPanelRef"
+                  :draw-commands="currentDrawCommands"
+                  @clear-visualization="handleClearVisualization"
+                  @toggle-expanded="handleToggleVisualizationExpanded"
+                />
+              </div>
+            </div>
+
+            <!-- Resize Handle -->
+            <div
+              class="sidebar-resize-handle"
+              @mousedown="startResize"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Editor Area -->
+        <div class="flex-1 flex flex-col">
+          <div class="flex-1 flex flex-col">
+            <Editor
+              v-if="currentFile"
+              ref="editorRef"
+              :file-content="currentFileContent"
+              :file-path="currentFile"
+              @content-changed="handleContentChanged"
+            />
+            <div v-else class="flex-1 flex items-center justify-center text-gray-500">
+              <div class="text-center">
+                <h2 class="text-xl mb-2">{{ $t('app.welcome') }}</h2>
+                <p>{{ $t('app.welcomeMessage') }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Debug Console -->
+          <DebugConsole
+            v-if="showDebugConsole"
+            ref="debugConsoleRef"
+            :is-visible="showDebugConsole"
+            :draw-commands="currentDrawCommands"
+            @toggle-visibility="handleToggleDebugConsole"
+          />
+        </div>
+      </template>
     </div>
 
     <!-- Settings Modal -->
@@ -226,6 +240,7 @@ const showSettingsModal = ref<boolean>(false)
 const showKeyboardShortcutsModal = ref<boolean>(false)
 const showDebugConsole = ref<boolean>(false)
 const activeTab = ref<'files' | 'functions' | 'visualization'>('files')
+const isVisualizationExpanded = ref<boolean>(false)
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const debugConsoleRef = ref<InstanceType<typeof DebugConsole> | null>(null)
 const visualizationPanelRef = ref<InstanceType<typeof VisualizationPanel> | null>(null)
@@ -234,7 +249,7 @@ const currentFileName = ref<string>('')
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary',
   language: 'en',
-  sidebar_width: 320
+  sidebar_width: 596
 })
 const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
 
@@ -242,11 +257,11 @@ const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
 const currentDrawCommands = ref<DrawCommand[]>([])
 
 // Sidebar resize functionality
-const sidebarWidth = ref<number>(320)
-const previousSidebarWidth = ref<number>(320)
+const sidebarWidth = ref<number>(596)
+const previousSidebarWidth = ref<number>(596)
 const isResizing = ref<boolean>(false)
 const minSidebarWidth = 48  // Just the icon bar
-const maxSidebarWidth = 600
+const maxSidebarWidth = 800
 
 const handleNewFile = (): void => {
   currentFile.value = null
@@ -499,6 +514,12 @@ const handleRunScript = async (): Promise<void> => {
         console.log('Full result object:', JSON.stringify(result, null, 2))
         currentDrawCommands.value = result.draw_commands || []
         console.log('Draw commands received:', JSON.stringify(currentDrawCommands.value, null, 2))
+
+        // Auto-switch to visualization tab and expand if we have draw commands
+        if (currentDrawCommands.value.length > 0) {
+          activeTab.value = 'visualization'
+          isVisualizationExpanded.value = true
+        }
         notifications.scriptExecutionCompleted(
           currentFileName.value || currentFile.value,
           result.execution_time_ms
@@ -563,6 +584,12 @@ const handleRunWithDebug = async (): Promise<void> => {
         console.log('Full result object (debug mode):', JSON.stringify(result, null, 2))
         currentDrawCommands.value = result.draw_commands || []
         console.log('Draw commands received (debug mode):', JSON.stringify(currentDrawCommands.value, null, 2))
+
+        // Auto-switch to visualization tab and expand if we have draw commands
+        if (currentDrawCommands.value.length > 0) {
+          activeTab.value = 'visualization'
+          isVisualizationExpanded.value = true
+        }
         notifications.scriptExecutionCompleted(
           currentFileName.value || currentFile.value,
           result.execution_time_ms
@@ -613,6 +640,14 @@ const handleClearVisualization = (): void => {
   currentDrawCommands.value = []
   if (debugConsoleRef.value) {
     debugConsoleRef.value.clearConsole()
+  }
+}
+
+const handleToggleVisualizationExpanded = (expanded: boolean): void => {
+  isVisualizationExpanded.value = expanded
+  // If expanding, switch to visualization tab
+  if (expanded) {
+    activeTab.value = 'visualization'
   }
 }
 
