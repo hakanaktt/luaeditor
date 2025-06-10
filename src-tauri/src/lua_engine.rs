@@ -54,14 +54,19 @@ impl Default for TurtleState {
 
 #[derive(Debug, Clone)]
 pub struct AdekoState {
+    #[allow(dead_code)]
     pub current_face: String,
+    #[allow(dead_code)]
     pub current_layer: String,
+    #[allow(dead_code)]
     pub current_thickness: f64,
     #[allow(dead_code)]
     pub show_points_enabled: bool,
     #[allow(dead_code)]
     pub listing_enabled: bool,
+    #[allow(dead_code)]
     pub part_width: f64,
+    #[allow(dead_code)]
     pub part_height: f64,
 }
 
@@ -83,6 +88,7 @@ pub struct NativeLuaEngine {
     lua: Lua,
     output_buffer: Arc<Mutex<Vec<String>>>,
     turtle_state: Arc<Mutex<TurtleState>>,
+    #[allow(dead_code)]
     adeko_state: Arc<Mutex<AdekoState>>,
     draw_commands: Arc<Mutex<Vec<DrawCommand>>>,
     lua_library_path: Option<String>,
@@ -693,6 +699,7 @@ impl NativeLuaEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn setup_adeko_functions(&self, globals: &Table) -> LuaResult<()> {
         // Create ADekoLib table
         let adeko_lib = self.lua.create_table()?;

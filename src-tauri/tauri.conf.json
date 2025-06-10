@@ -1,5 +1,5 @@
 {
-  "productName": "Adeko Lua Editor",
+  "productName": "Adeko Lua Editor 1.0.0",
   "version": "1.0.0",
   "identifier": "com.adeko.luamacroeditor",
   "build": {
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "Adeko Lua Editor",
+        "title": "Adeko Lua Editor 1.0.0",
         "width": 1200,
         "height": 800,
         "minWidth": 800,

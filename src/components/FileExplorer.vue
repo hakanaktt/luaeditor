@@ -1,9 +1,8 @@
 <template>
   <div class="h-full flex flex-col">
-    <!-- Header -->
+    <!-- Toolbar -->
     <div class="p-3 border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-700">{{ $t('tabs.files') }}</h3>
+      <div class="flex items-center justify-between mb-2">
         <div class="flex items-center space-x-1">
           <button
             @click="refreshDirectory"
@@ -27,30 +26,29 @@
             <FolderPlus :size="14" />
           </button>
         </div>
-      </div>
-
-      <div class="mt-2 flex items-center space-x-1">
         <button
           @click="navigateUp"
           :disabled="!canNavigateUp"
           class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          :title="$t('fileExplorer.navigateUp')"
         >
           <ChevronUp :size="16" />
         </button>
-        <span class="text-xs text-gray-500 truncate flex-1">{{ displayPath }}</span>
+      </div>
+
+      <div class="mb-2">
+        <span class="text-xs text-gray-500 truncate">{{ displayPath }}</span>
       </div>
 
       <!-- Search Box -->
-      <div class="mt-2">
-        <div class="relative">
-          <Search :size="14" class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="$t('functions.searchPlaceholder')"
-            class="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
+      <div class="relative">
+        <Search :size="14" class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          :placeholder="$t('functions.searchPlaceholder')"
+          class="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
       </div>
     </div>
 

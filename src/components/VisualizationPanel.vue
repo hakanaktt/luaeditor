@@ -1,18 +1,16 @@
 <template>
   <div class="visualization-panel">
-    <!-- Panel Header -->
-    <div class="panel-header">
+    <!-- Toolbar -->
+    <div v-if="drawCommands.length > 0" class="panel-toolbar">
       <div class="flex items-center space-x-2">
-        <Palette :size="16" class="text-blue-600" />
-        <span class="text-sm font-medium text-gray-700">{{ $t('visualization.title') }}</span>
-        <div v-if="drawCommands.length > 0" class="text-xs text-gray-500">
+        <div class="text-xs text-gray-500">
           {{ drawCommands.length }} {{ $t('visualization.commands') }}
         </div>
       </div>
       <div class="flex items-center space-x-1">
         <!-- Turtle Graphics Controls -->
         <button
-          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          v-if="!isTurtleCanvasMinimized"
           @click="resetView"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('turtleCanvas.resetView')"
@@ -20,7 +18,7 @@
           <RotateCcw :size="14" />
         </button>
         <button
-          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          v-if="!isTurtleCanvasMinimized"
           @click="zoomIn"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('turtleCanvas.zoomIn')"
@@ -28,7 +26,7 @@
           <ZoomIn :size="14" />
         </button>
         <button
-          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          v-if="!isTurtleCanvasMinimized"
           @click="zoomOut"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('turtleCanvas.zoomOut')"
@@ -37,11 +35,11 @@
         </button>
 
         <!-- Separator -->
-        <div v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized" class="w-px h-4 bg-gray-300"></div>
+        <div v-if="!isTurtleCanvasMinimized" class="w-px h-4 bg-gray-300"></div>
 
         <!-- Panel Controls -->
         <button
-          v-if="drawCommands.length > 0 && !isTurtleCanvasMinimized"
+          v-if="!isTurtleCanvasMinimized"
           @click="minimizeTurtleCanvas"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('turtleCanvas.minimize')"
@@ -49,7 +47,6 @@
           <Minimize2 :size="14" />
         </button>
         <button
-          v-if="drawCommands.length > 0"
           @click="clearVisualization"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('visualization.clear')"
@@ -103,9 +100,6 @@
 import { ref, watch } from 'vue'
 import { Palette, Trash2, Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut } from 'lucide-vue-next'
 import TurtleCanvas from './TurtleCanvas.vue'
-import { useI18n } from '@/composables/useI18n'
-
-const { t } = useI18n()
 
 interface DrawCommand {
   command_type: string
@@ -195,7 +189,7 @@ defineExpose({
   @apply h-full flex flex-col bg-white;
 }
 
-.panel-header {
+.panel-toolbar {
   @apply flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200;
   height: 40px;
 }
