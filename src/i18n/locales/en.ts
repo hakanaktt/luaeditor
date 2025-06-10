@@ -255,7 +255,9 @@ export default {
     modified: '●',
     luaMacroEditor: 'Adeko Lua Editor',
     initialized: 'Adeko Lua Editor initialized',
-    directoryNotExist: 'Lua library directory does not exist:'
+    directoryNotExist: 'Lua library directory does not exist:',
+    line: 'Line',
+    column: 'Column'
   },
 
   // Languages

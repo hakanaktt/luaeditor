@@ -34,6 +34,7 @@ const props = defineProps<Props>()
 // Define emits
 const emit = defineEmits<{
   'content-changed': [content: string]
+  'cursor-position-changed': [line: number, column: number]
 }>()
 
 const editorContainer = ref<HTMLElement>()
@@ -169,6 +170,8 @@ const initializeEditor = (): void => {
   editor.onDidChangeCursorPosition((e) => {
     currentLine.value = e.position.lineNumber
     currentColumn.value = e.position.column
+    // Emit cursor position changes to parent component
+    emit('cursor-position-changed', e.position.lineNumber, e.position.column)
   })
 
   // Initialize IntelliSense

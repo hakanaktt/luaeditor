@@ -158,6 +158,7 @@
               :file-content="currentFileContent"
               :file-path="currentFile"
               @content-changed="handleContentChanged"
+              @cursor-position-changed="handleCursorPositionChanged"
             />
             <div v-else class="flex-1 flex items-center justify-center text-gray-500">
               <div class="text-center">
@@ -203,7 +204,10 @@
     <div class="h-6 bg-blue-600 text-white text-xs flex items-center px-2">
       <span v-if="currentFile">{{ currentFile }}</span>
       <span v-else>{{ $t('app.noFileOpen') }}</span>
-      <div class="ml-auto">
+      <div class="ml-auto flex items-center space-x-4">
+        <span v-if="currentFile" class="flex items-center space-x-1">
+          <span>{{ $t('status.line') }} {{ currentLine }}, {{ $t('status.column') }} {{ currentColumn }}</span>
+        </span>
         <span v-if="isModified" class="mr-2">{{ $t('status.modified') }}</span>
         <span>{{ $t('status.luaMacroEditor') }}</span>
       </div>
@@ -255,6 +259,8 @@ const debugConsoleRef = ref<InstanceType<typeof DebugConsole> | null>(null)
 const visualizationPanelRef = ref<InstanceType<typeof VisualizationPanel> | null>(null)
 const zoomLevel = ref<number>(100)
 const currentFileName = ref<string>('')
+const currentLine = ref<number>(1)
+const currentColumn = ref<number>(1)
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary',
   language: 'en',
@@ -277,6 +283,8 @@ const handleNewFile = (): void => {
   currentFileName.value = ''
   currentFileContent.value = t('files.newFileComment')
   isModified.value = true
+  currentLine.value = 1
+  currentColumn.value = 1
   notifications.info('New file created', 'File Operation')
 }
 
@@ -296,6 +304,8 @@ const handleOpenFile = async (): Promise<void> => {
       currentFileName.value = selected.split(/[/\\]/).pop() || ''
       currentFileContent.value = content
       isModified.value = false
+      currentLine.value = 1
+      currentColumn.value = 1
       notifications.fileOpened(currentFileName.value)
     }
   } catch (error) {
@@ -351,6 +361,8 @@ const handleFileSelected = async (filePath: string): Promise<void> => {
     currentFile.value = filePath
     currentFileContent.value = content
     isModified.value = false
+    currentLine.value = 1
+    currentColumn.value = 1
   } catch (error) {
     console.error(t('errors.loadingFile'), error)
   }
@@ -363,6 +375,11 @@ const handleDirectoryChanged = (newDirectory: string): void => {
 const handleContentChanged = (newContent: string): void => {
   currentFileContent.value = newContent
   isModified.value = true
+}
+
+const handleCursorPositionChanged = (line: number, column: number): void => {
+  currentLine.value = line
+  currentColumn.value = column
 }
 
 const handleInsertFunction = (functionCall: string): void => {

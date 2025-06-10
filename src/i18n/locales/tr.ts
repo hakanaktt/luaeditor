@@ -257,7 +257,9 @@ export default {
     modified: '●',
     luaMacroEditor: 'Adeko Lua Editörü',
     initialized: 'Adeko Lua Editörü başlatıldı',
-    directoryNotExist: 'Lua kütüphane dizini mevcut değil:'
+    directoryNotExist: 'Lua kütüphane dizini mevcut değil:',
+    line: 'Satır',
+    column: 'Sütun'
   },
 
   // Diller
