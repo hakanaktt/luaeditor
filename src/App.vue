@@ -275,7 +275,7 @@ const zoomLevel = ref<number>(100)
 const appSettings = ref<AppSettings>({
   model_library_path: './LIBRARY/modelLibrary',
   language: 'en',
-  sidebar_width: 596
+  sidebar_width: 350
 })
 const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
 
@@ -283,8 +283,8 @@ const luaLibraryPath = ref<string>('./LIBRARY/luaLibrary')
 const currentDrawCommands = ref<DrawCommand[]>([])
 
 // Sidebar resize functionality
-const sidebarWidth = ref<number>(596)
-const previousSidebarWidth = ref<number>(596)
+const sidebarWidth = ref<number>(350)
+const previousSidebarWidth = ref<number>(350)
 const isResizing = ref<boolean>(false)
 const minSidebarWidth = 48  // Just the icon bar
 const maxSidebarWidth = 800

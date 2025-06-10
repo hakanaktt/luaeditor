@@ -1,7 +1,8 @@
 <template>
   <div class="flex-1 flex flex-col bg-white min-h-0">
-    <!-- Editor Tabs -->
+    <!-- Editor Tabs (only show if not in diff mode) -->
     <EditorTabs
+      v-if="!group.isDiffMode"
       :files="group.files"
       :active-file-id="group.activeFileId"
       :show-split-button="showSplitButton"
@@ -16,7 +17,19 @@
 
     <!-- Editor Content -->
     <div class="flex-1 flex flex-col min-h-0">
-      <template v-if="activeFile">
+      <!-- Diff Editor Mode -->
+      <template v-if="group.isDiffMode && group.diffFile">
+        <DiffEditor
+          :key="group.diffFile.id"
+          ref="diffEditorRef"
+          :diff-file="group.diffFile"
+          :editor-id="group.diffFile.id"
+          @close-diff="handleCloseDiff"
+        />
+      </template>
+
+      <!-- Normal Editor Mode -->
+      <template v-else-if="activeFile">
         <Editor
           :key="activeFile.id"
           ref="editorRef"
@@ -27,6 +40,8 @@
           @cursor-position-changed="handleCursorPositionChanged"
         />
       </template>
+
+      <!-- No File Open -->
       <div v-else class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <h3 class="text-lg mb-2">{{ $t('editor.noFileOpen') }}</h3>
@@ -47,6 +62,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import EditorTabs from './EditorTabs.vue'
 import Editor from './Editor.vue'
+import DiffEditor from './DiffEditor.vue'
 import { useI18n } from '@/composables/useI18n'
 import type { EditorGroup as EditorGroupType, EditorFile } from '@/types'
 
@@ -70,6 +86,7 @@ const emit = defineEmits<{
   'close-others': [groupId: string, keepFileId: string]
   'close-modified': [groupId: string]
   'group-focus': [groupId: string]
+  'close-diff': [groupId: string]
 }>()
 
 const { t } = useI18n()

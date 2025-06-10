@@ -151,10 +151,19 @@ export interface EditorFile {
   scrollLeft?: number
 }
 
+export interface DiffEditorFile {
+  id: string
+  originalFile: EditorFile
+  modifiedFile: EditorFile
+  name: string // Display name for the diff tab
+}
+
 export interface EditorGroup {
   id: string
   activeFileId: string | null
   files: EditorFile[]
+  isDiffMode?: boolean
+  diffFile?: DiffEditorFile
 }
 
 export interface SplitLayout {

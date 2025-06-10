@@ -1,6 +1,6 @@
 [package]
 name = "lua-macro-editor"
-version = "1.0.0"
+version = "0.10.0"
 description = "Lua Macro Editor for Adeko Libraries"
 authors = ["you"]
 license = ""

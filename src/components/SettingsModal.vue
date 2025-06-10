@@ -89,11 +89,11 @@
               v-model.number="localSettings.sidebar_width"
               type="range"
               min="200"
-              max="600"
+              max="800"
               step="10"
               class="flex-1"
             />
-            <span class="text-sm text-gray-600 w-16">{{ localSettings.sidebar_width || 320 }}px</span>
+            <span class="text-sm text-gray-600 w-16">{{ localSettings.sidebar_width || 350 }}px</span>
           </div>
           <p class="text-xs text-gray-500 mt-1">
             {{ $t('settings.sidebarWidthNote') }}
