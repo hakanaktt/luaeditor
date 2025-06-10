@@ -79,7 +79,40 @@ export default {
     reportIssue: 'Report Issue'
   },
 
+  // About modal
+  about: {
+    title: 'About Adeko Lua Editor',
+    version: 'Version',
+    author: 'Author',
+    authorName: 'Hakan Ak',
+    description: 'A powerful Lua script editor designed specifically for Adeko CAM libraries with advanced IntelliSense, debugging capabilities, and turtle graphics visualization.',
+    features: 'Key Features',
+    featureList: [
+      'Advanced Lua syntax highlighting and IntelliSense',
+      'Integrated AdekoLib function browser with 200+ functions',
+      'Real-time Lua syntax validation and error checking',
+      'Debug mode with turtle graphics visualization',
+      'Multi-language support (English/Turkish)',
+      'Project file management and organization',
+      'Built-in code formatting and validation tools'
+    ],
+    copyright: '© 2024 Adeko. All rights reserved.',
+    builtWith: 'Built with',
+    technologies: 'Vue 3, TypeScript, Tauri, Rust, Monaco Editor',
+    close: 'Close'
+  },
 
+  // Lua validation
+  luaValidation: {
+    validating: 'Validating Lua syntax...',
+    valid: 'Lua syntax is valid',
+    invalid: 'Lua syntax errors found',
+    noFileOpen: 'No file open to validate',
+    errors: 'Syntax Errors',
+    line: 'Line',
+    column: 'Column',
+    message: 'Message'
+  },
 
   // Navigation tabs
   tabs: {
@@ -124,6 +157,28 @@ export default {
     usage: 'Usage',
     relatedFunctions: 'Related Functions',
     optional: 'optional'
+  },
+
+  // Function categories
+  functionCategories: {
+    'Geometric Transformations': 'Geometric Transformations',
+    'Point & Vector Operations': 'Point & Vector Operations',
+    'Shape Generation': 'Shape Generation',
+    'Polyline Operations': 'Polyline Operations',
+    'Machining Operations': 'Machining Operations',
+    'Analysis & Testing': 'Analysis & Testing',
+    'Utilities': 'Utilities'
+  },
+
+  // Function category descriptions
+  functionCategoryDescriptions: {
+    'Geometric Transformations': 'Functions for rotating, translating, mirroring, and scaling shapes',
+    'Point & Vector Operations': 'Functions for point calculations, distances, angles, and vector operations',
+    'Shape Generation': 'Functions for creating basic and complex geometric shapes',
+    'Polyline Operations': 'Functions for creating, modifying, and manipulating polylines and paths',
+    'Machining Operations': 'Functions for creating machining operations like holes, grooves, and pockets',
+    'Analysis & Testing': 'Functions for geometric analysis, collision detection, and validation',
+    'Utilities': 'Utility functions for sorting, organizing, and data manipulation'
   },
 
   // File operations

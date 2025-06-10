@@ -22,6 +22,7 @@ configparser = "3.0"
 dirs = "5.0"
 encoding_rs = "0.8"
 mlua = { version = "0.9", features = ["lua54", "vendored", "serialize"] }
+regex = "1.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

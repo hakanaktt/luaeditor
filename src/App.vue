@@ -192,6 +192,12 @@
       @close="showKeyboardShortcutsModal = false"
     />
 
+    <!-- About Modal -->
+    <AboutModal
+      :is-visible="showAboutModal"
+      @close="showAboutModal = false"
+    />
+
     <!-- Status Bar -->
     <div class="h-6 bg-blue-600 text-white text-xs flex items-center px-2">
       <span v-if="currentFile">{{ currentFile }}</span>
@@ -218,6 +224,7 @@ import Editor from './components/Editor.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import FunctionBrowser from './components/FunctionBrowser.vue'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal.vue'
+import AboutModal from './components/AboutModal.vue'
 import DebugConsole from './components/DebugConsole.vue'
 import VisualizationPanel from './components/VisualizationPanel.vue'
 import NotificationSystem from './components/NotificationSystem.vue'
@@ -238,6 +245,7 @@ const currentFileContent = ref<string>('')
 const isModified = ref<boolean>(false)
 const showSettingsModal = ref<boolean>(false)
 const showKeyboardShortcutsModal = ref<boolean>(false)
+const showAboutModal = ref<boolean>(false)
 const showDebugConsole = ref<boolean>(false)
 const activeTab = ref<'files' | 'functions' | 'visualization'>('files')
 const isVisualizationExpanded = ref<boolean>(false)
@@ -452,9 +460,35 @@ const handleShowFunctionBrowser = (): void => {
   activeTab.value = 'functions'
 }
 
-const handleValidateLua = (): void => {
-  // TODO: Implement Lua syntax validation
-  console.log('Validate Lua syntax')
+const handleValidateLua = async (): Promise<void> => {
+  if (!currentFile.value || !currentFileContent.value) {
+    notifications.warning(t('luaValidation.noFileOpen'), 'Lua Validation')
+    return
+  }
+
+  notifications.info(t('luaValidation.validating'), 'Lua Validation')
+
+  try {
+    const { validateLuaSyntax } = await import('@/utils/luaExecutor')
+
+    const result = await validateLuaSyntax(currentFileContent.value)
+
+    if (result.is_valid) {
+      notifications.success(t('luaValidation.valid'), 'Lua Validation')
+    } else {
+      // Show detailed error information
+      const errorMessages = result.errors.map(error =>
+        `${t('luaValidation.line')} ${error.line}, ${t('luaValidation.column')} ${error.column}: ${error.message}`
+      ).join('\n')
+
+      notifications.error(
+        `${t('luaValidation.invalid')}\n\n${t('luaValidation.errors')}:\n${errorMessages}`,
+        'Lua Validation'
+      )
+    }
+  } catch (error) {
+    notifications.error(`Failed to validate Lua syntax: ${error}`, 'Lua Validation')
+  }
 }
 
 const handleFormatCode = (): void => {
@@ -473,8 +507,7 @@ const handleShowKeyboardShortcuts = (): void => {
 }
 
 const handleShowAbout = (): void => {
-  // TODO: Implement about modal
-  console.log('Show about')
+  showAboutModal.value = true
 }
 
 // Debug handlers

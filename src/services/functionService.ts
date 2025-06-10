@@ -1,5 +1,8 @@
-import { AdekoFunction, FunctionCategory, FunctionFilter, IntelliSenseSuggestion } from '../types'
-import { adekoFunctions, functionCategories } from '../data/adekoFunctions'
+import { AdekoFunction, LocalizedAdekoFunction, FunctionCategory, FunctionFilter, IntelliSenseSuggestion } from '../types'
+import { functionCategories } from '../data/adekoFunctions'
+import { englishFunctionDefinitions } from '../data/adekoFunctions.en'
+import { turkishFunctionDefinitions } from '../data/adekoFunctions.tr'
+import { i18n } from '../i18n'
 
 /**
  * FunctionService - Core service for managing AdekoLib function catalog and IntelliSense features
@@ -25,7 +28,101 @@ import { adekoFunctions, functionCategories } from '../data/adekoFunctions'
  * ```
  */
 export class FunctionService {
-  private functions: AdekoFunction[] = adekoFunctions
+  private localizedFunctions: Map<string, LocalizedAdekoFunction[]> = new Map()
+
+  constructor() {
+    // Initialize localized function definitions
+    this.localizedFunctions.set('en', englishFunctionDefinitions)
+    this.localizedFunctions.set('tr', turkishFunctionDefinitions)
+  }
+
+  /**
+   * Get current locale from i18n
+   */
+  private getCurrentLocale(): string {
+    return i18n.global.locale.value || 'en'
+  }
+
+
+
+  /**
+   * Get localized functions for current locale
+   */
+  private getLocalizedFunctions(): LocalizedAdekoFunction[] {
+    const locale = this.getCurrentLocale()
+    return this.localizedFunctions.get(locale) || this.localizedFunctions.get('en') || []
+  }
+
+  /**
+   * Convert localized function to AdekoFunction format
+   */
+  private convertToAdekoFunction(localizedFunc: LocalizedAdekoFunction): AdekoFunction {
+    return {
+      ...localizedFunc,
+      parameters: localizedFunc.parameters.map(p => ({
+        ...p
+      }))
+    }
+  }
+
+  /**
+   * Get all functions with current localization
+   */
+  getLocalizedFunctionList(): AdekoFunction[] {
+    const localizedFuncs = this.getLocalizedFunctions()
+    return localizedFuncs.map(func => this.convertToAdekoFunction(func))
+  }
+
+  /**
+   * Get localized category name
+   */
+  private getLocalizedCategoryName(categoryName: string): string {
+    const locale = this.getCurrentLocale()
+    if (locale === 'tr') {
+      const categoryTranslations = {
+        'Geometric Transformations': 'Geometrik Dönüşümler',
+        'Point & Vector Operations': 'Nokta ve Vektör İşlemleri',
+        'Shape Generation': 'Şekil Oluşturma',
+        'Polyline Operations': 'Çok Çizgi İşlemleri',
+        'Machining Operations': 'İşleme Operasyonları',
+        'Analysis & Testing': 'Analiz ve Test',
+        'Utilities': 'Yardımcı Araçlar'
+      }
+      return categoryTranslations[categoryName as keyof typeof categoryTranslations] || categoryName
+    }
+    return categoryName
+  }
+
+  /**
+   * Get localized category description
+   */
+  private getLocalizedCategoryDescription(categoryName: string): string {
+    const locale = this.getCurrentLocale()
+    if (locale === 'tr') {
+      const descriptionTranslations = {
+        'Geometric Transformations': 'Şekilleri döndürme, öteleme, aynalama ve ölçeklendirme fonksiyonları',
+        'Point & Vector Operations': 'Nokta hesaplamaları, mesafeler, açılar ve vektör işlemleri fonksiyonları',
+        'Shape Generation': 'Temel ve karmaşık geometrik şekiller oluşturma fonksiyonları',
+        'Polyline Operations': 'Çok çizgi ve yolları oluşturma, değiştirme ve manipüle etme fonksiyonları',
+        'Machining Operations': 'Delik, oluk ve cep gibi işleme operasyonları oluşturma fonksiyonları',
+        'Analysis & Testing': 'Geometrik analiz, çarpışma tespiti ve doğrulama fonksiyonları',
+        'Utilities': 'Sıralama, düzenleme ve veri manipülasyonu için yardımcı fonksiyonlar'
+      }
+      return descriptionTranslations[categoryName as keyof typeof descriptionTranslations] || categoryName
+    }
+
+    // English descriptions
+    const englishDescriptions = {
+      'Geometric Transformations': 'Functions for rotating, translating, mirroring, and scaling shapes',
+      'Point & Vector Operations': 'Functions for point calculations, distances, angles, and vector operations',
+      'Shape Generation': 'Functions for creating basic and complex geometric shapes',
+      'Polyline Operations': 'Functions for creating, modifying, and manipulating polylines and paths',
+      'Machining Operations': 'Functions for creating machining operations like holes, grooves, and pockets',
+      'Analysis & Testing': 'Functions for geometric analysis, collision detection, and validation',
+      'Utilities': 'Utility functions for sorting, organizing, and data manipulation'
+    }
+    return englishDescriptions[categoryName as keyof typeof englishDescriptions] || categoryName
+  }
   private categories: FunctionCategory[] = functionCategories
 
   /**
@@ -63,7 +160,8 @@ export class FunctionService {
    * ```
    */
   searchFunctions(filter: FunctionFilter): AdekoFunction[] {
-    return this.functions.filter(func => {
+    const localizedFunctions = this.getLocalizedFunctionList()
+    return localizedFunctions.filter(func => {
       // Category filter
       if (filter.category && func.category !== filter.category) {
         return false
@@ -126,7 +224,8 @@ export class FunctionService {
    * ```
    */
   getFunction(name: string): AdekoFunction | undefined {
-    return this.functions.find(func => func.name === name)
+    const localizedFunctions = this.getLocalizedFunctionList()
+    return localizedFunctions.find(func => func.name === name)
   }
 
   /**
@@ -149,7 +248,11 @@ export class FunctionService {
    * ```
    */
   getCategories(): FunctionCategory[] {
-    return this.categories
+    return this.categories.map(category => ({
+      ...category,
+      name: this.getLocalizedCategoryName(category.name),
+      description: this.getLocalizedCategoryDescription(category.name)
+    }))
   }
 
   /**
@@ -165,7 +268,8 @@ export class FunctionService {
    * ```
    */
   getFunctionsByCategory(categoryName: string): AdekoFunction[] {
-    return this.functions.filter(func => func.category === categoryName)
+    const localizedFunctions = this.getLocalizedFunctionList()
+    return localizedFunctions.filter(func => func.category === categoryName)
   }
 
   /**
@@ -184,7 +288,8 @@ export class FunctionService {
    * ```
    */
   getFunctionsBySubcategory(categoryName: string, subcategoryName: string): AdekoFunction[] {
-    return this.functions.filter(func =>
+    const localizedFunctions = this.getLocalizedFunctionList()
+    return localizedFunctions.filter(func =>
       func.category === categoryName && func.subcategory === subcategoryName
     )
   }
@@ -224,7 +329,8 @@ export class FunctionService {
       const partialFunction = wordMatch[1].toLowerCase()
       
       // Filter functions that match the partial input
-      const matchingFunctions = this.functions.filter(func =>
+      const localizedFunctions = this.getLocalizedFunctionList()
+      const matchingFunctions = localizedFunctions.filter(func =>
         func.name.toLowerCase().startsWith(partialFunction)
       )
 
@@ -364,7 +470,8 @@ export class FunctionService {
    * ```
    */
   getAllFunctionNames(): string[] {
-    return this.functions.map(func => func.name).sort()
+    const localizedFunctions = this.getLocalizedFunctionList()
+    return localizedFunctions.map(func => func.name).sort()
   }
 
   /**
@@ -382,7 +489,8 @@ export class FunctionService {
    * ```
    */
   getFunctionsByComplexity(complexity: 'basic' | 'intermediate' | 'advanced'): AdekoFunction[] {
-    return this.functions.filter(func => func.complexity === complexity)
+    const localizedFunctions = this.getLocalizedFunctionList()
+    return localizedFunctions.filter(func => func.complexity === complexity)
   }
 
   /**
@@ -411,7 +519,8 @@ export class FunctionService {
     const func = this.getFunction(functionName)
     if (!func) return []
 
-    const related = this.functions
+    const localizedFunctions = this.getLocalizedFunctionList()
+    const related = localizedFunctions
       .filter(f => f.name !== functionName)
       .map(f => ({
         function: f,

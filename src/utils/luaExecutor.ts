@@ -26,6 +26,17 @@ export interface LuaExecutorOptions {
   debugMode: boolean
 }
 
+export interface LuaSyntaxError {
+  line: number
+  column: number
+  message: string
+}
+
+export interface LuaSyntaxValidationResult {
+  is_valid: boolean
+  errors: LuaSyntaxError[]
+}
+
 /**
  * Execute Lua script using the embedded native Lua interpreter
  */
@@ -62,5 +73,25 @@ export async function checkLuaAvailability(): Promise<boolean> {
     return await invoke<boolean>('check_lua_availability')
   } catch {
     return false
+  }
+}
+
+/**
+ * Validate Lua syntax using the embedded Lua interpreter
+ */
+export async function validateLuaSyntax(scriptContent: string): Promise<LuaSyntaxValidationResult> {
+  try {
+    return await invoke<LuaSyntaxValidationResult>('validate_lua_syntax', {
+      scriptContent
+    })
+  } catch (error) {
+    return {
+      is_valid: false,
+      errors: [{
+        line: 1,
+        column: 1,
+        message: `Failed to validate Lua syntax: ${error}`
+      }]
+    }
   }
 }

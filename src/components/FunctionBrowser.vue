@@ -147,8 +147,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Search, Plus } from 'lucide-vue-next'
-import { AdekoFunction, FunctionCategory, FunctionFilter } from '../types'
+import { AdekoFunction, FunctionFilter } from '../types'
 import { functionService } from '../services/functionService'
+import { useI18n } from 'vue-i18n'
 
 // Props
 interface Props {
@@ -159,6 +160,9 @@ const props = withDefaults(defineProps<Props>(), {
   onInsertFunction: () => {}
 })
 
+// i18n setup
+const { locale } = useI18n()
+
 // Reactive state
 const searchTerm = ref('')
 const selectedCategory = ref('')
@@ -166,8 +170,8 @@ const selectedSubcategory = ref('')
 const selectedComplexity = ref('')
 const selectedFunction = ref<AdekoFunction | null>(null)
 
-// Data
-const categories = ref<FunctionCategory[]>(functionService.getCategories())
+// Data - make categories reactive to locale changes
+const categories = computed(() => functionService.getCategories())
 const relatedFunctions = ref<AdekoFunction[]>([])
 
 // Computed
@@ -202,7 +206,9 @@ const onFilterChange = () => {
 }
 
 const selectCategory = (categoryName: string) => {
-  selectedCategory.value = categoryName
+  // Store the localized category name for display, but filter using original English name
+  const originalCategoryName = getOriginalCategoryName(categoryName)
+  selectedCategory.value = originalCategoryName
   searchTerm.value = ''
 }
 
@@ -212,7 +218,23 @@ const selectFunction = (func: AdekoFunction) => {
 }
 
 const getFunctionCount = (categoryName: string) => {
-  return functionService.getFunctionsByCategory(categoryName).length
+  // Use the original English category name for filtering
+  const originalCategoryName = getOriginalCategoryName(categoryName)
+  return functionService.getFunctionsByCategory(originalCategoryName).length
+}
+
+// Helper function to get original English category name
+const getOriginalCategoryName = (localizedName: string) => {
+  const categoryMap = {
+    'Geometrik Dönüşümler': 'Geometric Transformations',
+    'Nokta ve Vektör İşlemleri': 'Point & Vector Operations',
+    'Şekil Oluşturma': 'Shape Generation',
+    'Çok Çizgi İşlemleri': 'Polyline Operations',
+    'İşleme Operasyonları': 'Machining Operations',
+    'Analiz ve Test': 'Analysis & Testing',
+    'Yardımcı Araçlar': 'Utilities'
+  }
+  return categoryMap[localizedName as keyof typeof categoryMap] || localizedName
 }
 
 const getSubcategories = (categoryName: string) => {
@@ -243,6 +265,18 @@ const insertFunction = () => {
 watch(selectedFunction, (newFunc) => {
   if (newFunc) {
     relatedFunctions.value = functionService.getRelatedFunctions(newFunc.name)
+  }
+})
+
+// Watch for locale changes to refresh function data
+watch(locale, () => {
+  // Refresh selected function with new localization
+  if (selectedFunction.value) {
+    const refreshedFunction = functionService.getFunction(selectedFunction.value.name)
+    if (refreshedFunction) {
+      selectedFunction.value = refreshedFunction
+      relatedFunctions.value = functionService.getRelatedFunctions(refreshedFunction.name)
+    }
   }
 })
 </script>

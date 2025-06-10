@@ -573,6 +573,68 @@ fn check_lua_availability() -> Result<bool, String> {
     Ok(true)
 }
 
+#[derive(serde::Serialize)]
+struct LuaSyntaxError {
+    line: u32,
+    column: u32,
+    message: String,
+}
+
+#[derive(serde::Serialize)]
+struct LuaSyntaxValidationResult {
+    is_valid: bool,
+    errors: Vec<LuaSyntaxError>,
+}
+
+#[tauri::command]
+fn validate_lua_syntax(script_content: String) -> Result<LuaSyntaxValidationResult, String> {
+    use mlua::Lua;
+
+    let lua = Lua::new();
+
+    match lua.load(&script_content).exec() {
+        Ok(_) => {
+            // Syntax is valid
+            Ok(LuaSyntaxValidationResult {
+                is_valid: true,
+                errors: vec![],
+            })
+        }
+        Err(e) => {
+            // Parse the error to extract line and column information
+            let error_message = e.to_string();
+            let mut errors = vec![];
+
+            // Try to parse line number from error message
+            // Lua errors typically have format like "[string \"...\"]:line: message"
+            if let Some(captures) = regex::Regex::new(r"\[string.*?\]:(\d+):\s*(.+)")
+                .unwrap()
+                .captures(&error_message)
+            {
+                if let Ok(line) = captures[1].parse::<u32>() {
+                    errors.push(LuaSyntaxError {
+                        line,
+                        column: 1, // Lua doesn't always provide column info
+                        message: captures[2].to_string(),
+                    });
+                }
+            } else {
+                // Fallback: create a generic error
+                errors.push(LuaSyntaxError {
+                    line: 1,
+                    column: 1,
+                    message: error_message,
+                });
+            }
+
+            Ok(LuaSyntaxValidationResult {
+                is_valid: false,
+                errors,
+            })
+        }
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -593,7 +655,8 @@ fn main() {
             save_settings,
             get_lua_library_path,
             execute_lua_script,
-            check_lua_availability
+            check_lua_availability,
+            validate_lua_syntax
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

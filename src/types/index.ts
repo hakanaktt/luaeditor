@@ -31,6 +31,31 @@ export interface AdekoFunction {
   seeAlso?: string[]
 }
 
+// Localized function definitions interface
+export interface LocalizedAdekoFunction {
+  name: string
+  description: string
+  parameters: LocalizedParameter[]
+  returnType: string
+  returnDescription: string
+  example: string
+  category: string
+  subcategory?: string
+  tags: string[]
+  complexity: 'basic' | 'intermediate' | 'advanced'
+  usage?: string
+  seeAlso?: string[]
+}
+
+// Localized parameter interface
+export interface LocalizedParameter {
+  name: string
+  type: string
+  description: string
+  optional?: boolean
+  defaultValue?: any
+}
+
 export interface Parameter {
   name: string
   type: string

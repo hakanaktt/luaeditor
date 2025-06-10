@@ -79,6 +79,41 @@ export default {
     reportIssue: 'Sorun Bildir'
   },
 
+  // Hakkında modal
+  about: {
+    title: 'Adeko Lua Editörü Hakkında',
+    version: 'Sürüm',
+    author: 'Yazar',
+    authorName: 'Hakan Ak',
+    description: 'Adeko CAM kütüphaneleri için özel olarak tasarlanmış gelişmiş IntelliSense, hata ayıklama yetenekleri ve turtle grafik görselleştirmesi ile güçlü bir Lua script editörü.',
+    features: 'Temel Özellikler',
+    featureList: [
+      'Gelişmiş Lua sözdizimi vurgulama ve IntelliSense',
+      '200+ fonksiyonlu entegre AdekoLib fonksiyon tarayıcısı',
+      'Gerçek zamanlı Lua sözdizimi doğrulama ve hata kontrolü',
+      'Turtle grafik görselleştirmesi ile hata ayıklama modu',
+      'Çoklu dil desteği (İngilizce/Türkçe)',
+      'Proje dosya yönetimi ve organizasyonu',
+      'Yerleşik kod biçimlendirme ve doğrulama araçları'
+    ],
+    copyright: '© 2024 Adeko. Tüm hakları saklıdır.',
+    builtWith: 'Geliştirildiği teknolojiler',
+    technologies: 'Vue 3, TypeScript, Tauri, Rust, Monaco Editor',
+    close: 'Kapat'
+  },
+
+  // Lua doğrulama
+  luaValidation: {
+    validating: 'Lua sözdizimi doğrulanıyor...',
+    valid: 'Lua sözdizimi geçerli',
+    invalid: 'Lua sözdizimi hataları bulundu',
+    noFileOpen: 'Doğrulanacak açık dosya yok',
+    errors: 'Sözdizimi Hataları',
+    line: 'Satır',
+    column: 'Sütun',
+    message: 'Mesaj'
+  },
+
 
 
   // Navigasyon sekmeleri
@@ -124,6 +159,28 @@ export default {
     usage: 'Kullanım',
     relatedFunctions: 'İlgili Fonksiyonlar',
     optional: 'isteğe bağlı'
+  },
+
+  // Fonksiyon kategorileri
+  functionCategories: {
+    'Geometric Transformations': 'Geometrik Dönüşümler',
+    'Point & Vector Operations': 'Nokta ve Vektör İşlemleri',
+    'Shape Generation': 'Şekil Oluşturma',
+    'Polyline Operations': 'Çok Çizgi İşlemleri',
+    'Machining Operations': 'İşleme Operasyonları',
+    'Analysis & Testing': 'Analiz ve Test',
+    'Utilities': 'Yardımcı Araçlar'
+  },
+
+  // Fonksiyon kategori açıklamaları
+  functionCategoryDescriptions: {
+    'Geometric Transformations': 'Şekilleri döndürme, öteleme, aynalama ve ölçeklendirme fonksiyonları',
+    'Point & Vector Operations': 'Nokta hesaplamaları, mesafeler, açılar ve vektör işlemleri fonksiyonları',
+    'Shape Generation': 'Temel ve karmaşık geometrik şekiller oluşturma fonksiyonları',
+    'Polyline Operations': 'Çok çizgi ve yolları oluşturma, değiştirme ve manipüle etme fonksiyonları',
+    'Machining Operations': 'Delik, oluk ve cep gibi işleme operasyonları oluşturma fonksiyonları',
+    'Analysis & Testing': 'Geometrik analiz, çarpışma tespiti ve doğrulama fonksiyonları',
+    'Utilities': 'Sıralama, düzenleme ve veri manipülasyonu için yardımcı fonksiyonlar'
   },
 
   // Dosya işlemleri
