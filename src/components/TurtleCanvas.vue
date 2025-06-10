@@ -255,27 +255,27 @@ const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) 
   ctx.stroke()
 
   // Add axis labels if scale is appropriate
-  if (scale.value > 0.3) {
+  if (scale.value > 0.1) {
     ctx.fillStyle = '#666'
-    ctx.font = `${Math.max(10, 12 / scale.value)}px Arial`
+    ctx.font = `${Math.max(18, 24 / scale.value)}px Arial`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
     // X-axis label
-    ctx.fillText('X', endX - 20, -15)
+    ctx.fillText('X', endX - 40, -30)
 
     // Y-axis label
     ctx.save()
     ctx.rotate(-Math.PI / 2)
-    ctx.fillText('Y', 15, -endY + 20)
+    ctx.fillText('Y', 30, -endY + 40)
     ctx.restore()
 
     // Origin marker
     ctx.fillStyle = '#333'
     ctx.beginPath()
-    ctx.arc(0, 0, 3, 0, 2 * Math.PI)
+    ctx.arc(0, 0, 6, 0, 2 * Math.PI)
     ctx.fill()
-    ctx.fillText('(0,0)', 10, -10)
+    ctx.fillText('(0,0)', 20, -20)
   }
 }
 
@@ -299,12 +299,12 @@ const drawFaceLayoutGuides = (ctx: CanvasRenderingContext2D) => {
     const Y = 700  // Default cabinet height
 
     const faceRegions = [
-      { name: 'Left', x: 20 + offset, y: offset, width: materialThickness, height: Y },
-      { name: 'Rear', x: 20 + offset, y: 2 * offset + materialThickness, width: X, height: materialThickness },
-      { name: 'Front', x: 20 + 3 * offset + X + materialThickness, y: 3 * offset + 2 * materialThickness, width: materialThickness, height: X },
-      { name: 'Right', x: 20 + 2 * offset + X, y: 3 * offset + 2 * materialThickness, width: materialThickness, height: Y },
-      { name: 'Top', x: 20 + offset, y: 3 * offset + 2 * materialThickness, width: X, height: Y },
-      { name: 'Bottom', x: 20 + 4 * offset + X + 2 * materialThickness, y: 3 * offset + 2 * materialThickness, width: X, height: Y }
+      { name: 'Left', x: offset, y: offset, width: materialThickness, height: Y },
+      { name: 'Rear', x: offset, y: 2 * offset + materialThickness, width: X, height: materialThickness },
+      { name: 'Front', x: 3 * offset + X + materialThickness, y: 3 * offset + 2 * materialThickness, width: materialThickness, height: X },
+      { name: 'Right', x: 2 * offset + X, y: 3 * offset + 2 * materialThickness, width: materialThickness, height: Y },
+      { name: 'Top', x: offset, y: 3 * offset + 2 * materialThickness, width: X, height: Y },
+      { name: 'Bottom', x: 4 * offset + X + 2 * materialThickness, y: 3 * offset + 2 * materialThickness, width: X, height: Y }
     ]
 
     faceRegions.forEach(face => {
@@ -321,45 +321,93 @@ const drawCommand = (ctx: CanvasRenderingContext2D, command: DrawCommand) => {
   ctx.lineWidth = Math.max(1, command.size)
   ctx.fillStyle = parseColor(command.color)
 
+  // Check if this is a face layout command from ADekoDebugMode (should not be offset)
+  const isFaceLayoutCommand = command.command_type === 'text' &&
+    ['Left', 'Right', 'Top', 'Bottom', 'Front', 'Rear'].includes(command.text)
+
+  // Check if this is part of the ADekoDebugMode face boundary system
+  // ADekoDebugMode commands have black color and size 2.0, and are in specific coordinate ranges
+  const isADekoDebugCommand = (command.color === 'black' && command.size === 2.0) ||
+    (command.command_type === 'circle' && command.color === 'black' && command.size === 2.0) ||
+    isFaceLayoutCommand
+
+  // Determine if this command should be offset based on coordinate position
+  // Bottom face operations appear at x >= 600 (approximately) due to ADekoLib.moveToFace()
+  // Top face operations appear at x < 600
+  const isBottomFaceCommand = !isADekoDebugCommand && command.x1 >= 600
+  const isTopFaceCommand = !isADekoDebugCommand && !isBottomFaceCommand
+
+  // Grid-based offset: 1 grid right (20px) and 5 grids up (-100px due to Y-flip)
+  // Additional 4mm downward adjustment (+4px due to Y-flip)
+  // Only apply to user script commands in the TOP FACE area (not bottom face or ADekoDebugMode commands)
+  const gridSize = 20
+  const gridOffsetX = (isADekoDebugCommand || isBottomFaceCommand) ? 0 : 1 * gridSize
+  const gridOffsetY = (isADekoDebugCommand || isBottomFaceCommand) ? 0 : -5 * gridSize + 4  // +4mm downward relative to layout
+
   console.log('Canvas context settings:', {
     strokeStyle: ctx.strokeStyle,
     lineWidth: ctx.lineWidth,
-    fillStyle: ctx.fillStyle
+    fillStyle: ctx.fillStyle,
+    isFaceLayout: isFaceLayoutCommand,
+    isADekoDebug: isADekoDebugCommand,
+    isTopFace: isTopFaceCommand,
+    isBottomFace: isBottomFaceCommand,
+    x1: command.x1,
+    offsetX: gridOffsetX,
+    offsetY: gridOffsetY
   })
 
   switch (command.command_type) {
     case 'line':
-      console.log('Drawing line from', command.x1, -command.y1, 'to', command.x2, -command.y2)
+      const x1 = command.x1 + gridOffsetX
+      const y1 = -command.y1 + gridOffsetY
+      const x2 = command.x2 + gridOffsetX
+      const y2 = -command.y2 + gridOffsetY
+      console.log('Drawing line from', x1, y1, 'to', x2, y2)
       ctx.beginPath()
-      ctx.moveTo(command.x1, -command.y1) // Flip Y coordinate
-      ctx.lineTo(command.x2, -command.y2)
+      ctx.moveTo(x1, y1) // Apply grid offset and flip Y coordinate
+      ctx.lineTo(x2, y2)
       ctx.stroke()
       console.log('Line drawn')
       break
-      
+
     case 'circle':
       ctx.beginPath()
-      ctx.arc(command.x1, -command.y1, command.radius, 0, 2 * Math.PI)
+      if (command.radius <= 2.0) {
+        console.log('Drawing circle with negative radius. Skipping...')
+        break
+      }
+      const cx = command.x1 + gridOffsetX
+      const cy = -command.y1 + gridOffsetY
+      ctx.arc(cx, cy, command.radius, 0, 2 * Math.PI)
       ctx.stroke()
       break
-      
+
     case 'rectangle':
       const width = command.x2 - command.x1
       const height = command.y2 - command.y1
+      const rx = command.x1 + gridOffsetX
+      const ry = -command.y2 + gridOffsetY
       if (command.radius > 0) {
         // Rounded rectangle
         const radius = Math.min(command.radius, Math.abs(width) / 2, Math.abs(height) / 2)
         ctx.beginPath()
-        ctx.roundRect(command.x1, -command.y2, width, height, radius)
+        ctx.roundRect(rx, ry, width, height, radius)
         ctx.stroke()
       } else {
-        ctx.strokeRect(command.x1, -command.y2, width, height)
+        ctx.strokeRect(rx, ry, width, height)
       }
       break
-      
+
     case 'text':
-      ctx.font = `${command.size || 12}px Arial`
-      ctx.fillText(command.text, command.x1, -command.y1)
+      // Make text much bigger - multiply by 4 and ensure minimum size of 32px
+      const fontSize = Math.max(20, (command.size || 12) * 1.5)
+      ctx.font = `${fontSize}px Arial`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      const tx = command.x1 + gridOffsetX
+      const ty = -command.y1 + gridOffsetY
+      ctx.fillText(command.text, tx, ty)
       break
   }
 }

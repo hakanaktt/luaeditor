@@ -5,6 +5,13 @@
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center space-x-1">
           <button
+            @click="browseFolderDialog"
+            class="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+            :title="$t('fileExplorer.browseFolder')"
+          >
+            <FolderOpen :size="14" />
+          </button>
+          <button
             @click="refreshDirectory"
             class="p-1 text-gray-500 hover:text-gray-700 transition-colors"
             :title="$t('fileExplorer.refresh')"
@@ -155,6 +162,7 @@ import {
   File, FileCode, FileImage, FileVideo, FileAudio, Archive, Settings,
   Edit3, Trash2, Copy, Scissors, Clipboard, ExternalLink, Info, Loader2
 } from 'lucide-vue-next'
+import { open } from '@tauri-apps/plugin-dialog'
 import { useI18n } from '@/composables/useI18n'
 import ContextMenu from './ContextMenu.vue'
 import type { FileItem } from '@/types'
@@ -887,6 +895,23 @@ const deleteSelectedItems = async (): Promise<void> => {
   } catch (error) {
     console.error('Error deleting items:', error)
     alert(t('fileExplorer.deleteError'))
+  }
+}
+
+const browseFolderDialog = async (): Promise<void> => {
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: t('fileExplorer.browseFolder')
+    })
+
+    if (selected) {
+      emit('directory-changed', selected as string)
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    alert(t('fileExplorer.refreshError'))
   }
 }
 

@@ -17,37 +17,37 @@ require("turtle")
 pnsz(2)
 
 -- left face
-zero(20+offset, offset)
+zero(offset, offset)
 crcl(0, 0, 2) crcl(0, 0, 3) crcl(0, 0, 4)
 move(Y) turn(90) move(materialThickness) turn(90) move(Y) turn(90) move(materialThickness) turn(90)
-text("Left", 90, -20, materialThickness)
+text("Left", 90, 0, materialThickness)
 
 -- rear face
-zero(20+offset, 2*offset+materialThickness)
+zero(offset, 2*offset+materialThickness)
 crcl(0, 0, 2) crcl(0, 0, 3) crcl(0, 0, 4)
 move(X) turn(90) move(materialThickness) turn(90) move(X) turn(90) move(materialThickness) turn(90)
-text("Rear", 90, -20, materialThickness)
+text("Rear", 90, 0, materialThickness)
 
 -- front face
-zero(20+3*offset+X+materialThickness, 3*offset+2*materialThickness)
+zero(3*offset+X+materialThickness, 3*offset+2*materialThickness)
 crcl(0, 0, 2) crcl(0, 0, 3) crcl(0, 0, 4)
 move(materialThickness) turn(90) move(X) turn(90) move(materialThickness) turn(90) move(X) turn(90)
 text("Front", 0, 0, X+offset/2)
 
 -- right face
-zero(20+2*offset+X, 3*offset+2*materialThickness)
+zero(2*offset+X, 3*offset+2*materialThickness)
 crcl(0, 0, 2) crcl(0, 0, 3) crcl(0, 0, 4)
 move(materialThickness) turn(90) move(Y) turn(90) move(materialThickness) turn(90) move(Y) turn(90)
 text("Right", 0, offset/2, Y+offset/2)
 
 -- top face
-zero(20+offset, 3*offset+2*materialThickness)
+zero(offset, 3*offset+2*materialThickness)
 crcl(0, 0, 2) crcl(0, 0, 3) crcl(0, 0, 4)
 move(X) turn(90) move(Y) turn(90) move(X) turn(90) move(Y) turn(90)
-text("Top", 90, -20, Y+offset/2)
+text("Top", 90, 0, Y+offset/2)
 
 --bottom face
-zero(20+4*offset+X+2*materialThickness, 3*offset+2*materialThickness)
+zero(4*offset+X+2*materialThickness, 3*offset+2*materialThickness)
 crcl(0, 0, 2) crcl(0, 0, 3) crcl(0, 0, 4)
 move(X) turn(90) move(Y) turn(90) move(X) turn(90) move(Y) turn(90)
 text("Bottom", 0, 0, Y+offset/2)

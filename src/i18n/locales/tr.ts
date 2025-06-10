@@ -223,6 +223,8 @@ export default {
 
   // Dosya Gezgini Bağlam Menüsü
   fileExplorer: {
+    browseFolder: 'Klasör Gözat',
+    navigateUp: 'Yukarı Git',
     newFile: 'Yeni Dosya',
     newFolder: 'Yeni Klasör',
     rename: 'Yeniden Adlandır',

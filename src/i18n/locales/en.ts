@@ -221,6 +221,8 @@ export default {
 
   // File Explorer Context Menu
   fileExplorer: {
+    browseFolder: 'Browse Folder',
+    navigateUp: 'Navigate Up',
     newFile: 'New File',
     newFolder: 'New Folder',
     rename: 'Rename',
