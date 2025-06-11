@@ -184,20 +184,19 @@ export class MonacoIntelliSenseService {
       }
     }
 
+    // Get the current word being typed to determine if we need to replace it
+    const word = model.getWordUntilPosition(position)
+    const partialWord = word.word.toLowerCase()
+
     // Basic Lua keywords, modules, and ADekoLib prefix
-    const basicSuggestions: monaco.languages.CompletionItem[] = [
+    const allBasicSuggestions = [
       {
         label: 'ADekoLib',
         kind: monaco.languages.CompletionItemKind.Module,
         detail: 'AdekoLib Function Library',
         documentation: 'Access to AdekoLib functions for CAD/CAM operations',
         insertText: 'ADekoLib.',
-        range: {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: position.column,
-          endColumn: position.column
-        }
+        filterText: 'ADekoLib'
       },
       {
         label: 'string',
@@ -205,12 +204,7 @@ export class MonacoIntelliSenseService {
         detail: 'Lua String Library',
         documentation: 'String manipulation functions',
         insertText: 'string.',
-        range: {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: position.column,
-          endColumn: position.column
-        }
+        filterText: 'string'
       },
       {
         label: 'math',
@@ -218,12 +212,7 @@ export class MonacoIntelliSenseService {
         detail: 'Lua Math Library',
         documentation: 'Mathematical functions and constants',
         insertText: 'math.',
-        range: {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: position.column,
-          endColumn: position.column
-        }
+        filterText: 'math'
       },
       {
         label: 'table',
@@ -231,17 +220,26 @@ export class MonacoIntelliSenseService {
         detail: 'Lua Table Library',
         documentation: 'Table manipulation functions',
         insertText: 'table.',
-        range: {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: position.column,
-          endColumn: position.column
-        }
+        filterText: 'table'
       }
     ]
 
+    // Filter basic suggestions based on partial word and add proper range
+    const basicSuggestions: monaco.languages.CompletionItem[] = allBasicSuggestions
+      .filter(suggestion =>
+        partialWord === '' || suggestion.filterText.toLowerCase().startsWith(partialWord)
+      )
+      .map(suggestion => ({
+        ...suggestion,
+        range: {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn
+        }
+      }))
+
     // Add core Lua functions if user is typing something that might match
-    const word = model.getWordUntilPosition(position)
     if (word.word.length > 1) {
       const coreFunctions = luaStandardLibraryService.getFunctionsByModule('core')
       const matchingCoreFunctions = coreFunctions
