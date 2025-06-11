@@ -335,20 +335,29 @@ const drawCommand = (ctx: CanvasRenderingContext2D, command: DrawCommand) => {
   // Check if this operation has 'SF' suffix in layer name (bottom face operations)
   const hasSFSuffix = command.layer_name && command.layer_name.includes('_SF')
 
-  // Determine if this command should be offset based on coordinate position and layer name
-  // Bottom face operations appear at x >= 600 (approximately) due to ADekoLib.moveToFace()
-  // OR have 'SF' suffix in their layer name (which indicates bottom face operations)
-  // Top face operations appear at x < 600 AND don't have 'SF' suffix
-  const isBottomFaceCommand = !isADekoDebugCommand && (command.x1 >= 600 || hasSFSuffix)
-  const isTopFaceCommand = !isADekoDebugCommand && !isBottomFaceCommand
-
   // Calculate positioning offsets based on face and operation type
   const gridSize = 20
 
-  // Face positioning based on ADekoDebugMode layout:
-  // Top face origin: zero(40, 96)
-  // Bottom face origin: zero(616, 96)
-  // The difference is 576px in X direction
+  // Face positioning based on ADekoDebugMode layout and ADekoLib.moveToFace():
+  // Using the exact coordinates from ADekoDebugMode.lua with offset=20, materialThickness=18
+  const offset = 20
+  const materialThickness = 18
+  const X = 500  // Default cabinet width
+  const Y = 700  // Default cabinet height
+
+  // Face origins from ADekoLib.moveToFace():
+  // Top face origin: zero(20+offset, 3*offset+2*mt) = zero(40, 96)
+  // Bottom face origin: zero(20+4*offset+X+2*mt, 3*offset+2*mt) = zero(616, 96)
+  const topFaceOriginX = 20 + offset  // 40
+  const topFaceOriginY = 3 * offset + 2 * materialThickness  // 96
+  const bottomFaceOriginX = 20 + 4 * offset + X + 2 * materialThickness  // 616
+  const bottomFaceOriginY = 3 * offset + 2 * materialThickness  // 96
+
+  // Determine if this command should be offset based on coordinate position and layer name
+  // Bottom face operations appear at x >= bottomFaceOriginX (616) due to ADekoLib.moveToFace()
+  // OR have 'SF' suffix in their layer name (which indicates bottom face operations)
+  const isBottomFaceCommand = !isADekoDebugCommand && (command.x1 >= bottomFaceOriginX || hasSFSuffix)
+  const isTopFaceCommand = !isADekoDebugCommand && !isBottomFaceCommand
 
   let gridOffsetX = 0
   let gridOffsetY = 0
@@ -358,15 +367,35 @@ const drawCommand = (ctx: CanvasRenderingContext2D, command: DrawCommand) => {
     gridOffsetX = 0
     gridOffsetY = 0
   } else if (isBottomFaceCommand) {
-    // Bottom face operations: move to bottom face area
-    // Bottom face origin is at (616, 96), top face origin is at (40, 96)
-    // So we need to add 576 to X to move from top face area to bottom face area
-    gridOffsetX = 576  // 616 - 40 = 576
-    gridOffsetY = 0
+    // Bottom face operations: commands come with coordinates like x=650-1040
+    // The bottom face region in the visual layout starts at x=616
+    // But the commands might need to be repositioned to appear correctly
+    //
+    // Looking at the console output, commands have coordinates like:
+    // x=651-1041, which should be in the bottom face region (starts at x=616)
+    // But they're appearing in the wrong visual position
+    //
+    // Let me try moving them to the correct visual position by applying
+    // a negative offset to bring them back to the proper location
+    //
+    // Bottom face commands need to be positioned in the bottom-right area
+    // Commands come with coordinates like x=650-1040 from ADekoLib.moveToFace()
+    // The correct offset to position them in the bottom face region is:
+    gridOffsetX = 620   // Move right to position in bottom face area
+    gridOffsetY = -100  // Move up to align with bottom face region
   } else {
     // Top face operations: apply grid offset (1 grid right, 5 grids up, +4mm down)
     gridOffsetX = 1 * gridSize
     gridOffsetY = -5 * gridSize + 4
+  }
+
+  // Debug logging for bottom face positioning (can be removed in production)
+  if (isBottomFaceCommand) {
+    console.log('Bottom face command positioned:', {
+      originalCoords: `(${command.x1}, ${command.y1})`,
+      finalCoords: `(${command.x1 + gridOffsetX}, ${-command.y1 + gridOffsetY})`,
+      offset: `(${gridOffsetX}, ${gridOffsetY})`
+    })
   }
 
   console.log('Canvas context settings:', {
@@ -384,7 +413,9 @@ const drawCommand = (ctx: CanvasRenderingContext2D, command: DrawCommand) => {
     finalX: command.x1 + gridOffsetX,
     finalY: -command.y1 + gridOffsetY,
     offsetX: gridOffsetX,
-    offsetY: gridOffsetY
+    offsetY: gridOffsetY,
+    topFaceOrigin: `(${topFaceOriginX}, ${topFaceOriginY})`,
+    bottomFaceOrigin: `(${bottomFaceOriginX}, ${bottomFaceOriginY})`
   })
 
   switch (command.command_type) {
