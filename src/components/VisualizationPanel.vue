@@ -3,43 +3,89 @@
     <!-- Toolbar -->
     <div v-if="drawCommands.length > 0" class="panel-toolbar">
       <div class="flex items-center space-x-2">
+        <!-- View Mode Tabs -->
+        <div class="view-tabs">
+          <button
+            @click="setViewMode('2d')"
+            :class="['tab-button', { 'active': viewMode === '2d' }]"
+          >
+            2D
+          </button>
+          <button
+            @click="setViewMode('3d')"
+            :class="['tab-button', { 'active': viewMode === '3d' }]"
+          >
+            3D
+          </button>
+        </div>
         <div class="text-xs text-gray-500">
           {{ drawCommands.length }} {{ $t('visualization.commands') }}
         </div>
       </div>
       <div class="flex items-center space-x-1">
-        <!-- Turtle Graphics Controls -->
-        <button
-          v-if="!isTurtleCanvasMinimized"
-          @click="resetView"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('turtleCanvas.resetView')"
-        >
-          <RotateCcw :size="14" />
-        </button>
-        <button
-          v-if="!isTurtleCanvasMinimized"
-          @click="zoomIn"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('turtleCanvas.zoomIn')"
-        >
-          <ZoomIn :size="14" />
-        </button>
-        <button
-          v-if="!isTurtleCanvasMinimized"
-          @click="zoomOut"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('turtleCanvas.zoomOut')"
-        >
-          <ZoomOut :size="14" />
-        </button>
+        <!-- 2D Turtle Graphics Controls -->
+        <template v-if="viewMode === '2d' && !isTurtleCanvasMinimized">
+          <button
+            @click="resetView"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('turtleCanvas.resetView')"
+          >
+            <RotateCcw :size="14" />
+          </button>
+          <button
+            @click="zoomIn"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('turtleCanvas.zoomIn')"
+          >
+            <ZoomIn :size="14" />
+          </button>
+          <button
+            @click="zoomOut"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('turtleCanvas.zoomOut')"
+          >
+            <ZoomOut :size="14" />
+          </button>
+        </template>
+
+        <!-- 3D Canvas Controls -->
+        <template v-if="viewMode === '3d'">
+          <button
+            @click="resetThreeView"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('threeCanvas.resetView')"
+          >
+            <RotateCcw :size="14" />
+          </button>
+          <button
+            @click="fitToView"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('threeCanvas.fitToView')"
+          >
+            <Maximize2 :size="14" />
+          </button>
+          <button
+            @click="toggleWireframe"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('threeCanvas.wireframe')"
+          >
+            <Grid3x3 :size="14" />
+          </button>
+          <button
+            @click="toggleOrthographic"
+            class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+            :title="$t('threeCanvas.orthographic')"
+          >
+            <Square :size="14" />
+          </button>
+        </template>
 
         <!-- Separator -->
-        <div v-if="!isTurtleCanvasMinimized" class="w-px h-4 bg-gray-300"></div>
+        <div v-if="(viewMode === '2d' && !isTurtleCanvasMinimized) || viewMode === '3d'" class="w-px h-4 bg-gray-300"></div>
 
         <!-- Panel Controls -->
         <button
-          v-if="!isTurtleCanvasMinimized"
+          v-if="viewMode === '2d' && !isTurtleCanvasMinimized"
           @click="minimizeTurtleCanvas"
           class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
           :title="$t('turtleCanvas.minimize')"
@@ -73,7 +119,7 @@
           <p class="text-xs text-gray-400 mt-1">{{ $t('visualization.runScriptHint') }}</p>
         </div>
       </div>
-      <div v-else-if="isTurtleCanvasMinimized" class="minimized-turtle-canvas">
+      <div v-else-if="viewMode === '2d' && isTurtleCanvasMinimized" class="minimized-turtle-canvas">
         <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded">
           <div class="flex items-center space-x-2">
             <Palette :size="16" class="text-blue-600" />
@@ -89,8 +135,11 @@
           </button>
         </div>
       </div>
-      <div v-else class="turtle-graphics-container">
+      <div v-else-if="viewMode === '2d'" class="turtle-graphics-container">
         <TurtleCanvas ref="turtleCanvasRef" :draw-commands="drawCommands" />
+      </div>
+      <div v-else-if="viewMode === '3d'" class="three-canvas-container">
+        <ThreeCanvas ref="threeCanvasRef" :draw-commands="drawCommands" />
       </div>
     </div>
   </div>
@@ -98,8 +147,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Palette, Trash2, Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut } from 'lucide-vue-next'
+import { Palette, Trash2, Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut, Grid3x3, Square } from 'lucide-vue-next'
 import TurtleCanvas from './TurtleCanvas.vue'
+import ThreeCanvas from './ThreeCanvas.vue'
 
 interface DrawCommand {
   command_type: string
@@ -130,7 +180,9 @@ const emit = defineEmits<{
 const drawCommands = ref<DrawCommand[]>([])
 const isExpanded = ref(true)  // Start maximized
 const isTurtleCanvasMinimized = ref(false)
+const viewMode = ref<'2d' | '3d'>('2d')
 const turtleCanvasRef = ref<InstanceType<typeof TurtleCanvas> | null>(null)
+const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null)
 
 const clearVisualization = () => {
   drawCommands.value = []
@@ -166,6 +218,40 @@ const zoomIn = () => {
 const zoomOut = () => {
   if (turtleCanvasRef.value) {
     turtleCanvasRef.value.zoomOut()
+  }
+}
+
+// View mode control
+const setViewMode = (mode: '2d' | '3d') => {
+  viewMode.value = mode
+  // Reset minimized state when switching to 3D
+  if (mode === '3d') {
+    isTurtleCanvasMinimized.value = false
+  }
+}
+
+// Three.js canvas control functions
+const resetThreeView = () => {
+  if (threeCanvasRef.value) {
+    threeCanvasRef.value.resetCamera()
+  }
+}
+
+const fitToView = () => {
+  if (threeCanvasRef.value) {
+    threeCanvasRef.value.fitToView()
+  }
+}
+
+const toggleWireframe = () => {
+  if (threeCanvasRef.value) {
+    threeCanvasRef.value.toggleWireframe()
+  }
+}
+
+const toggleOrthographic = () => {
+  if (threeCanvasRef.value) {
+    threeCanvasRef.value.toggleOrthographic()
   }
 }
 
@@ -215,5 +301,22 @@ defineExpose({
 
 .minimized-turtle-canvas {
   @apply p-2;
+}
+
+.view-tabs {
+  @apply flex bg-gray-100 rounded-md p-1;
+}
+
+.tab-button {
+  @apply px-3 py-1 text-xs font-medium rounded transition-colors;
+  @apply text-gray-600 hover:text-gray-800;
+}
+
+.tab-button.active {
+  @apply bg-white text-gray-900 shadow-sm;
+}
+
+.three-canvas-container {
+  @apply h-full;
 }
 </style>

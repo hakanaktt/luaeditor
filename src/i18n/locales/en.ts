@@ -324,6 +324,31 @@ export default {
     restore: 'Restore'
   },
 
+  // Three.js Canvas
+  threeCanvas: {
+    csgOperations: 'CSG Operations',
+    union: 'Union',
+    subtract: 'Subtract',
+    intersect: 'Intersect',
+    resetView: 'Reset View',
+    fitToView: 'Fit to View',
+    wireframe: 'Wireframe',
+    orthographic: 'Orthographic View',
+    frontView: 'Front View',
+    topView: 'Top View',
+    rightView: 'Right View',
+    isometricView: 'Isometric View',
+    rotate: 'Rotate',
+    zoom: 'Zoom',
+    pan: 'Pan',
+    leftClick: 'Left Click + Drag',
+    mouseWheel: 'Mouse Wheel',
+    rightClick: 'Right Click + Drag',
+    layers: 'Layers',
+    addLayer: 'Add Layer',
+    removeLayer: 'Remove Layer'
+  },
+
   // Toolbar
   toolbar: {
     fileOpen: 'File Open',

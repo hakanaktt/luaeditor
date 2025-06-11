@@ -326,6 +326,31 @@ export default {
     restore: 'Geri Yükle'
   },
 
+  // Three.js Canvas
+  threeCanvas: {
+    csgOperations: 'CSG İşlemleri',
+    union: 'Birleştir',
+    subtract: 'Çıkar',
+    intersect: 'Kesişim',
+    resetView: 'Görünümü Sıfırla',
+    fitToView: 'Görünüme Sığdır',
+    wireframe: 'Tel Kafes',
+    orthographic: 'Ortografik Görünüm',
+    frontView: 'Ön Görünüm',
+    topView: 'Üst Görünüm',
+    rightView: 'Sağ Görünüm',
+    isometricView: 'İzometrik Görünüm',
+    rotate: 'Döndür',
+    zoom: 'Yakınlaştır',
+    pan: 'Kaydır',
+    leftClick: 'Sol Tık + Sürükle',
+    mouseWheel: 'Fare Tekerleği',
+    rightClick: 'Sağ Tık + Sürükle',
+    layers: 'Katmanlar',
+    addLayer: 'Katman Ekle',
+    removeLayer: 'Katmanı Kaldır'
+  },
+
   // Araç çubuğu
   toolbar: {
     fileOpen: 'Dosya Açık',
