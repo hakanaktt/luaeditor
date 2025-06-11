@@ -10,6 +10,7 @@ export interface DrawCommand {
   color: string
   size: number
   text: string
+  layer_name: string
 }
 
 export interface LuaExecutionResult {

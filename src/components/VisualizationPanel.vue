@@ -111,6 +111,7 @@ interface DrawCommand {
   color: string
   size: number
   text: string
+  layer_name: string
 }
 
 interface Props {

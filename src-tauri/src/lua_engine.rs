@@ -18,6 +18,7 @@ pub struct DrawCommand {
     pub color: String,
     pub size: f64,
     pub text: String,
+    pub layer_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -323,12 +324,15 @@ impl NativeLuaEngine {
         let turtle_state = Arc::clone(&self.turtle_state);
         let output_buffer = Arc::clone(&self.output_buffer);
         let draw_commands = Arc::clone(&self.draw_commands);
+        let adeko_state = Arc::clone(&self.adeko_state);
 
         // move function
         let turtle_state_clone = Arc::clone(&turtle_state);
         let output_buffer_clone = Arc::clone(&output_buffer);
         let draw_commands_clone = Arc::clone(&draw_commands);
-        let move_fn = self.lua.create_function(move |_, distance: f64| {
+        let adeko_state_clone = Arc::clone(&adeko_state);
+        let lua_ref = &self.lua;
+        let move_fn = lua_ref.create_function(move |lua, distance: f64| {
             let mut state = turtle_state_clone.lock().unwrap();
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
@@ -342,7 +346,10 @@ impl NativeLuaEngine {
                 output.push(format!("Drawing line from ({:.2}, {:.2}) to ({:.2}, {:.2})",
                     state.x, state.y, new_x, new_y));
 
-                // Add draw command for line
+                // Get current layer from global variable
+                let globals = lua.globals();
+                let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+
                 commands.push(DrawCommand {
                     command_type: "line".to_string(),
                     x1: state.x,
@@ -353,6 +360,7 @@ impl NativeLuaEngine {
                     color: state.pen_color.clone(),
                     size: state.pen_size,
                     text: String::new(),
+                    layer_name: current_layer,
                 });
                 println!("Added line draw command, total commands: {}", commands.len());
             } else {
@@ -480,7 +488,9 @@ impl NativeLuaEngine {
         let output_buffer_clone = Arc::clone(&output_buffer);
         let draw_commands_clone = Arc::clone(&draw_commands);
         let turtle_state_clone = Arc::clone(&turtle_state);
-        let text_fn = self.lua.create_function(move |_, args: mlua::Variadic<Value>| {
+        let adeko_state_clone = Arc::clone(&adeko_state);
+        let lua_ref = &self.lua;
+        let text_fn = lua_ref.create_function(move |lua, args: mlua::Variadic<Value>| {
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
             let state = turtle_state_clone.lock().unwrap();
@@ -505,6 +515,10 @@ impl NativeLuaEngine {
 
             output.push(format!("Text at ({:.2}, {:.2}): {}", x, y, text_content));
 
+            // Get current layer from global variable
+            let globals = lua.globals();
+            let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+
             // Add draw command for text
             commands.push(DrawCommand {
                 command_type: "text".to_string(),
@@ -516,6 +530,7 @@ impl NativeLuaEngine {
                 color: state.pen_color.clone(),
                 size: state.pen_size,
                 text: text_content,
+                layer_name: current_layer,
             });
 
             Ok(())
@@ -536,13 +551,19 @@ impl NativeLuaEngine {
         let output_buffer_clone = Arc::clone(&output_buffer);
         let draw_commands_clone = Arc::clone(&draw_commands);
         let turtle_state_clone = Arc::clone(&turtle_state);
-        let crcl_fn = self.lua.create_function(move |_, (x, y, radius): (f64, f64, f64)| {
+        let adeko_state_clone = Arc::clone(&adeko_state);
+        let lua_ref = &self.lua;
+        let crcl_fn = lua_ref.create_function(move |lua, (x, y, radius): (f64, f64, f64)| {
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
             let state = turtle_state_clone.lock().unwrap();
 
             println!("Turtle crcl called with x: {}, y: {}, radius: {}", x, y, radius);
             output.push(format!("Circle at ({:.2}, {:.2}) with radius {:.2}", x, y, radius));
+
+            // Get current layer from global variable
+            let globals = lua.globals();
+            let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
 
             // Add draw command for circle
             commands.push(DrawCommand {
@@ -555,6 +576,7 @@ impl NativeLuaEngine {
                 color: state.pen_color.clone(),
                 size: state.pen_size,
                 text: String::new(),
+                layer_name: current_layer,
             });
             println!("Added circle draw command, total commands: {}", commands.len());
             Ok(())
@@ -565,12 +587,18 @@ impl NativeLuaEngine {
         let output_buffer_clone = Arc::clone(&output_buffer);
         let draw_commands_clone = Arc::clone(&draw_commands);
         let turtle_state_clone = Arc::clone(&turtle_state);
-        let line_fn = self.lua.create_function(move |_, (x1, y1, x2, y2): (f64, f64, f64, f64)| {
+        let adeko_state_clone = Arc::clone(&adeko_state);
+        let lua_ref = &self.lua;
+        let line_fn = lua_ref.create_function(move |lua, (x1, y1, x2, y2): (f64, f64, f64, f64)| {
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
             let state = turtle_state_clone.lock().unwrap();
 
             output.push(format!("Line from ({:.2}, {:.2}) to ({:.2}, {:.2})", x1, y1, x2, y2));
+
+            // Get current layer from global variable
+            let globals = lua.globals();
+            let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
 
             // Add draw command for line
             commands.push(DrawCommand {
@@ -583,6 +611,7 @@ impl NativeLuaEngine {
                 color: state.pen_color.clone(),
                 size: state.pen_size,
                 text: String::new(),
+                layer_name: current_layer,
             });
             Ok(())
         })?;
@@ -592,7 +621,9 @@ impl NativeLuaEngine {
         let output_buffer_clone = Arc::clone(&output_buffer);
         let draw_commands_clone = Arc::clone(&draw_commands);
         let turtle_state_clone = Arc::clone(&turtle_state);
-        let rect_fn = self.lua.create_function(move |_, args: mlua::Variadic<f64>| {
+        let adeko_state_clone = Arc::clone(&adeko_state);
+        let lua_ref = &self.lua;
+        let rect_fn = lua_ref.create_function(move |lua, args: mlua::Variadic<f64>| {
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
             let state = turtle_state_clone.lock().unwrap();
@@ -606,6 +637,10 @@ impl NativeLuaEngine {
             output.push(format!("Rectangle at ({:.2}, {:.2}) size {:.2}x{:.2} radius {:.2}",
                 x, y, width, height, corner_radius));
 
+            // Get current layer from global variable
+            let globals = lua.globals();
+            let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+
             // Add draw command for rectangle
             commands.push(DrawCommand {
                 command_type: "rectangle".to_string(),
@@ -617,6 +652,7 @@ impl NativeLuaEngine {
                 color: state.pen_color.clone(),
                 size: state.pen_size,
                 text: String::new(),
+                layer_name: current_layer,
             });
             Ok(())
         })?;
@@ -641,12 +677,18 @@ impl NativeLuaEngine {
         let output_buffer_clone = Arc::clone(&output_buffer);
         let draw_commands_clone = Arc::clone(&draw_commands);
         let turtle_state_clone = Arc::clone(&turtle_state);
-        let pixl_fn = self.lua.create_function(move |_, (x, y): (f64, f64)| {
+        let adeko_state_clone = Arc::clone(&adeko_state);
+        let lua_ref = &self.lua;
+        let pixl_fn = lua_ref.create_function(move |lua, (x, y): (f64, f64)| {
             let mut output = output_buffer_clone.lock().unwrap();
             let mut commands = draw_commands_clone.lock().unwrap();
             let state = turtle_state_clone.lock().unwrap();
 
             output.push(format!("Pixel at ({:.2}, {:.2})", x, y));
+
+            // Get current layer from global variable
+            let globals = lua.globals();
+            let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
 
             // Add draw command for a small circle to represent a pixel
             commands.push(DrawCommand {
@@ -659,6 +701,7 @@ impl NativeLuaEngine {
                 color: state.pen_color.clone(),
                 size: state.pen_size,
                 text: String::new(),
+                layer_name: current_layer,
             });
             Ok(())
         })?;
@@ -723,12 +766,18 @@ impl NativeLuaEngine {
         // setLayer function
         let adeko_state_clone = Arc::clone(&adeko_state);
         let output_buffer_clone = Arc::clone(&output_buffer);
-        let set_layer_fn = self.lua.create_function(move |_, layer: String| {
+        let lua_ref = &self.lua;
+        let set_layer_fn = lua_ref.create_function(move |lua, layer: String| {
             let mut state = adeko_state_clone.lock().unwrap();
             let mut output = output_buffer_clone.lock().unwrap();
-            
+
             state.current_layer = layer.clone();
             output.push(format!("Set layer to: {}", layer));
+
+            // Also set the global currentLayerName variable for ADekoLib compatibility
+            let globals = lua.globals();
+            globals.set("currentLayerName", layer.clone())?;
+
             Ok(())
         })?;
         adeko_lib.set("setLayer", set_layer_fn)?;
@@ -879,6 +928,7 @@ impl NativeLuaEngine {
         globals.set("edge3thickness", 0.3)?;
         globals.set("edge4thickness", 0.4)?;
         globals.set("doesSizeIncludeEdgeThickness", "false")?;
+        globals.set("currentLayerName", "LUA")?;
 
         Ok(())
     }
