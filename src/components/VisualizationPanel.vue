@@ -17,6 +17,12 @@
           >
             3D
           </button>
+          <button
+            @click="setViewMode('tools')"
+            :class="['tab-button', { 'active': viewMode === 'tools' }]"
+          >
+            {{ $t('cncTools.title') }}
+          </button>
         </div>
         <div class="text-xs text-gray-500">
           {{ drawCommands.length }} {{ $t('visualization.commands') }}
@@ -141,6 +147,9 @@
       <div v-else-if="viewMode === '3d'" class="three-canvas-container">
         <ThreeCanvas ref="threeCanvasRef" :draw-commands="drawCommands" />
       </div>
+      <div v-else-if="viewMode === 'tools'" class="cnc-tools-container">
+        <AutoToolDetector />
+      </div>
     </div>
   </div>
 </template>
@@ -150,6 +159,7 @@ import { ref, watch } from 'vue'
 import { Palette, Trash2, Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut, Grid3x3, Square } from 'lucide-vue-next'
 import TurtleCanvas from './TurtleCanvas.vue'
 import ThreeCanvas from './ThreeCanvas.vue'
+import AutoToolDetector from './AutoToolDetector.vue'
 
 interface DrawCommand {
   command_type: string
@@ -180,7 +190,7 @@ const emit = defineEmits<{
 const drawCommands = ref<DrawCommand[]>([])
 const isExpanded = ref(true)  // Start maximized
 const isTurtleCanvasMinimized = ref(false)
-const viewMode = ref<'2d' | '3d'>('2d')
+const viewMode = ref<'2d' | '3d' | 'tools'>('2d')
 const turtleCanvasRef = ref<InstanceType<typeof TurtleCanvas> | null>(null)
 const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null)
 
@@ -222,10 +232,10 @@ const zoomOut = () => {
 }
 
 // View mode control
-const setViewMode = (mode: '2d' | '3d') => {
+const setViewMode = (mode: '2d' | '3d' | 'tools') => {
   viewMode.value = mode
-  // Reset minimized state when switching to 3D
-  if (mode === '3d') {
+  // Reset minimized state when switching to 3D or tools
+  if (mode === '3d' || mode === 'tools') {
     isTurtleCanvasMinimized.value = false
   }
 }
@@ -254,6 +264,8 @@ const toggleOrthographic = () => {
     threeCanvasRef.value.toggleOrthographic()
   }
 }
+
+
 
 // Watch for draw commands prop changes
 watch(() => props.drawCommands, (newCommands) => {
@@ -318,5 +330,9 @@ defineExpose({
 
 .three-canvas-container {
   @apply h-full;
+}
+
+.cnc-tools-container {
+  @apply h-full overflow-y-auto;
 }
 </style>

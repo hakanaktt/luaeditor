@@ -171,3 +171,89 @@ export interface SplitLayout {
   splitDirection: 'horizontal' | 'vertical' | null
   activeGroupId: string | null
 }
+
+// CNC Tool Definitions for Door Surface Machining
+export type ToolShape = 'cylindrical' | 'conical' | 'ballnose' | 'radial' | 'special'
+
+export interface BaseTool {
+  id: string
+  name: string
+  shape: ToolShape
+  units: 'metric' | 'imperial'
+  diameter: number
+  length: number
+  description?: string
+  material?: string
+  coating?: string
+  manufacturer?: string
+  partNumber?: string
+}
+
+export interface CylindricalTool extends BaseTool {
+  shape: 'cylindrical'
+  flutes?: number
+  helixAngle?: number
+}
+
+export interface ConicalTool extends BaseTool {
+  shape: 'conical'
+  tipAngle: number
+  tipDiameter?: number
+  flutes?: number
+}
+
+export interface BallnoseTool extends BaseTool {
+  shape: 'ballnose'
+  ballRadius: number
+  flutes?: number
+  helixAngle?: number
+}
+
+export interface RadialTool extends BaseTool {
+  shape: 'radial'
+  cornerRadius: number
+  flutes?: number
+  helixAngle?: number
+}
+
+export interface SpecialTool extends BaseTool {
+  shape: 'special'
+  customParameters: Record<string, any>
+  profile?: string // SVG path or description
+  specialType: string // e.g., 'dovetail', 'keyhole', 'custom'
+}
+
+export type CNCTool = CylindricalTool | ConicalTool | BallnoseTool | RadialTool | SpecialTool
+
+export interface ToolOperation {
+  toolId: string
+  operation: 'roughing' | 'finishing' | 'profiling' | 'drilling' | 'pocketing'
+  surface: 'top' | 'bottom' | 'both'
+  feedRate?: number
+  spindleSpeed?: number
+  stepDown?: number
+  stepOver?: number
+  depth: number
+}
+
+export interface DoorMachiningProfile {
+  id: string
+  name: string
+  description?: string
+  topSurfaceOperations: ToolOperation[]
+  bottomSurfaceOperations: ToolOperation[]
+  tools: CNCTool[]
+}
+
+export interface DrawCommand {
+  command_type: string
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  radius: number
+  color: string
+  size: number
+  text: string
+  layer_name: string
+}

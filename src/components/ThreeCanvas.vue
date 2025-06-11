@@ -70,6 +70,13 @@
             F
           </button>
           <button
+            @click="setView('back')"
+            class="view-btn"
+            :title="$t('threeCanvas.backView')"
+          >
+            B
+          </button>
+          <button
             @click="setView('top')"
             class="view-btn"
             :title="$t('threeCanvas.topView')"
@@ -114,36 +121,30 @@
       </div>
     </div>
     
-    <!-- Operation Layers Panel -->
-    <div class="layers-panel">
-      <div class="layers-header">
-        <span class="text-xs font-medium text-gray-700">{{ $t('threeCanvas.layers') }}</span>
-        <button
-          @click="addLayer"
-          class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-          :title="$t('threeCanvas.addLayer')"
-        >
-          <Plus :size="12" />
-        </button>
+    <!-- Tool Analysis Panel -->
+    <div class="tool-analysis-panel">
+      <div class="panel-header">
+        <span class="text-xs font-medium text-gray-700">{{ $t('autoTool.detectedTools') }}</span>
       </div>
-      <div class="layers-list">
+      <div class="tool-layers-list">
         <div
-          v-for="layer in operationLayers"
-          :key="layer.id"
-          :class="['layer-item', { 'active': layer.id === activeLayerId }]"
-          @click="setActiveLayer(layer.id)"
+          v-for="toolLayer in detectedToolLayers"
+          :key="toolLayer.layerName"
+          class="tool-layer-item"
         >
-          <div class="layer-info">
-            <div class="layer-name">{{ layer.name }}</div>
-            <div class="layer-operation">{{ layer.operation }}</div>
+          <div class="tool-layer-info">
+            <div class="layer-name">{{ toolLayer.layerName }}</div>
+            <div v-if="toolLayer.analysis.tool" class="tool-info">
+              <component :is="getToolIcon(toolLayer.analysis.tool.shape)" :size="12" />
+              <span class="tool-name">{{ toolLayer.analysis.tool.name }}</span>
+              <span class="tool-diameter">⌀{{ toolLayer.analysis.tool.diameter }}mm</span>
+            </div>
+            <div v-else class="no-tool">{{ $t('autoTool.noToolDetected') }}</div>
+            <div class="operation-info">
+              <span class="operation">{{ toolLayer.analysis.operation }}</span>
+              <span class="surface">{{ $t(`autoTool.${toolLayer.analysis.surface}Surface`) }}</span>
+            </div>
           </div>
-          <button
-            @click.stop="removeLayer(layer.id)"
-            class="layer-remove"
-            :title="$t('threeCanvas.removeLayer')"
-          >
-            <X :size="12" />
-          </button>
         </div>
       </div>
     </div>
@@ -151,11 +152,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { Plus, Minus, Scissors, RotateCcw, Grid3x3, X, Maximize2, Square } from 'lucide-vue-next'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { Plus, Minus, Scissors, RotateCcw, Grid3x3, X, Maximize2, Square, Circle, Triangle, Zap, CornerDownRight, Star } from 'lucide-vue-next'
 import * as THREE from 'three'
 import { CSG } from 'three-csg-ts'
 import { OrbitControls } from '../utils/OrbitControls'
+import { layerToolDetector } from '@/services/layerToolDetector'
+import type { LayerAnalysis } from '@/services/layerToolDetector'
 
 interface DrawCommand {
   command_type: string
@@ -176,6 +179,12 @@ interface OperationLayer {
   operation: 'union' | 'subtract' | 'intersect'
   visible: boolean
   mesh?: THREE.Mesh
+}
+
+interface ToolLayer {
+  layerName: string
+  analysis: LayerAnalysis
+  commands: DrawCommand[]
 }
 
 interface Props {
@@ -214,6 +223,32 @@ const operationLayers = ref<OperationLayer[]>([
   }
 ])
 const activeLayerId = ref('base')
+
+// Tool analysis state
+const detectedToolLayers = computed(() => {
+  const layerMap = new Map<string, ToolLayer>()
+
+  props.drawCommands.forEach(command => {
+    const layerName = command.layer_name
+    if (!layerName) return
+
+    if (!layerMap.has(layerName)) {
+      const analysis = layerToolDetector.analyzeLayer(layerName)
+      layerMap.set(layerName, {
+        layerName,
+        analysis,
+        commands: []
+      })
+    }
+
+    layerMap.get(layerName)!.commands.push(command)
+  })
+
+  // Filter out non-machinable layers (LUA, LMM, etc.)
+  return Array.from(layerMap.values()).filter(toolLayer =>
+    toolLayer.analysis.operation !== 'non-machinable'
+  )
+})
 
 // Initialize Three.js scene
 const initThreeJS = () => {
@@ -434,7 +469,7 @@ const toggleOrthographic = () => {
 }
 
 // Predefined view positions
-const setView = (viewType: 'front' | 'top' | 'right' | 'iso') => {
+const setView = (viewType: 'front' | 'back' | 'top' | 'right' | 'iso') => {
   const distance = 600
   const center = new THREE.Vector3(0, DOOR_HEIGHT / 2, 0)
 
@@ -443,6 +478,9 @@ const setView = (viewType: 'front' | 'top' | 'right' | 'iso') => {
   switch (viewType) {
     case 'front':
       position = new THREE.Vector3(0, DOOR_HEIGHT / 2, distance)
+      break
+    case 'back':
+      position = new THREE.Vector3(0, DOOR_HEIGHT / 2, -distance)
       break
     case 'top':
       position = new THREE.Vector3(0, distance + DOOR_HEIGHT / 2, 0)
@@ -518,6 +556,18 @@ watch(() => props.drawCommands, (newCommands) => {
   console.log('ThreeCanvas received draw commands:', newCommands.length)
 }, { immediate: true })
 
+// Tool icon helper
+const getToolIcon = (shape: string) => {
+  const icons = {
+    cylindrical: Circle,
+    conical: Triangle,
+    ballnose: Zap,
+    radial: CornerDownRight,
+    special: Star
+  }
+  return icons[shape as keyof typeof icons] || Circle
+}
+
 // Expose methods for parent component
 defineExpose({
   resetCamera,
@@ -556,41 +606,57 @@ defineExpose({
   @apply flex-1 relative;
 }
 
-.layers-panel {
-  @apply absolute top-40 right-2 w-48 bg-white border border-gray-200 rounded shadow-lg;
-  max-height: 250px;
+.tool-analysis-panel {
+  @apply absolute top-40 right-2 w-64 bg-white border border-gray-200 rounded shadow-lg;
+  max-height: 400px;
 }
 
-.layers-header {
+.panel-header {
   @apply flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200;
 }
 
-.layers-list {
-  @apply max-h-48 overflow-y-auto;
+.tool-layers-list {
+  @apply max-h-80 overflow-y-auto;
 }
 
-.layer-item {
-  @apply flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100;
+.tool-layer-item {
+  @apply px-3 py-2 border-b border-gray-100;
 }
 
-.layer-item.active {
-  @apply bg-blue-50 border-blue-200;
-}
-
-.layer-info {
-  @apply flex-1;
+.tool-layer-info {
+  @apply space-y-1;
 }
 
 .layer-name {
-  @apply text-sm font-medium text-gray-700;
+  @apply text-sm font-medium text-gray-700 font-mono;
 }
 
-.layer-operation {
-  @apply text-xs text-gray-500 capitalize;
+.tool-info {
+  @apply flex items-center space-x-2 text-xs;
 }
 
-.layer-remove {
-  @apply p-1 hover:bg-red-100 rounded text-gray-400 hover:text-red-600;
+.tool-name {
+  @apply text-gray-600;
+}
+
+.tool-diameter {
+  @apply text-gray-500 font-mono;
+}
+
+.no-tool {
+  @apply text-xs text-gray-400 italic;
+}
+
+.operation-info {
+  @apply flex items-center space-x-2 text-xs;
+}
+
+.operation {
+  @apply bg-blue-100 text-blue-800 px-2 py-1 rounded capitalize;
+}
+
+.surface {
+  @apply bg-green-100 text-green-800 px-2 py-1 rounded;
 }
 
 .view-buttons {
