@@ -601,8 +601,11 @@ const createToolObjects = () => {
 
     console.log(`Creating tool objects for layer ${layerName} with tool ${tool.name} and thickness ${thickness}`)
 
-    // Create tool meshes for each command
-    const toolMeshes = cncToolService.createToolPathFromCommands(commands, tool, thickness)
+    // Detect operation type from layer name
+    const operation = detectOperationFromLayer(layerName)
+
+    // Create enhanced tool meshes for operations
+    const toolMeshes = cncToolService.createOperationToolMeshes(commands, tool, operation, thickness)
 
     toolMeshes.forEach((toolMesh, index) => {
       toolMesh.userData.isToolObject = true
@@ -644,6 +647,43 @@ const getToolIcon = (shape: string) => {
     special: Star
   }
   return icons[shape as keyof typeof icons] || Circle
+}
+
+// Detect operation type from layer name
+const detectOperationFromLayer = (layerName: string): string => {
+  const layer = layerName.toLowerCase()
+
+  if (layer.includes('roughing') || layer.includes('kaba') || layer.includes('rough')) {
+    return 'roughing'
+  }
+  if (layer.includes('finishing') || layer.includes('son') || layer.includes('finish')) {
+    return 'finishing'
+  }
+  if (layer.includes('pocket') || layer.includes('cep') || layer.includes('oyuk')) {
+    return 'pocketing'
+  }
+  if (layer.includes('drill') || layer.includes('delme') || layer.includes('hole')) {
+    return 'drilling'
+  }
+  if (layer.includes('profile') || layer.includes('profil') || layer.includes('contour')) {
+    return 'profiling'
+  }
+  if (layer.includes('v_') || layer.includes('v-') || layer.includes('groove')) {
+    return 'profiling'
+  }
+
+  // Default operation based on layer prefix
+  if (layer.startsWith('h_')) {
+    return 'profiling' // Contour operations
+  }
+  if (layer.startsWith('k_')) {
+    return 'profiling' // Groove operations
+  }
+  if (layer.startsWith('v_')) {
+    return 'profiling' // V-groove operations
+  }
+
+  return 'roughing' // Default operation
 }
 
 // Expose methods for parent component

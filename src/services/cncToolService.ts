@@ -309,7 +309,7 @@ export class CNCToolService {
   }
 
   // Utility methods
-  public getRecommendedToolsForOperation(operation: string, surface: string): CNCTool[] {
+  public getRecommendedToolsForOperation(operation: string, _surface: string = 'top'): CNCTool[] {
     const recommendations: Record<string, string[]> = {
       'roughing': ['cyl-10mm', 'cyl-6mm'],
       'finishing': ['cyl-6mm', 'ball-6mm', 'ball-3mm'],
@@ -604,6 +604,49 @@ export class CNCToolService {
     }
   }
 
+  // Enhanced tool mesh creation for CSG operations
+  public createCSGToolMesh(tool: CNCTool, _operation: string, depth: number = 5, _stepDown: number = 1): THREE.Mesh {
+    const segments = Math.max(16, Math.min(64, tool.diameter * 4)) // Adaptive segment count
+
+    switch (tool.shape) {
+      case 'cylindrical':
+        return this.createCSGCylindricalMesh(tool as CylindricalTool, depth, segments)
+      case 'conical':
+        return this.createCSGConicalMesh(tool as ConicalTool, depth, segments)
+      case 'ballnose':
+        return this.createCSGBallnoseMesh(tool as BallnoseTool, depth, segments)
+      case 'radial':
+        return this.createCSGRadialMesh(tool as RadialTool, depth, segments)
+      case 'special':
+        return this.createCSGSpecialMesh(tool as SpecialTool, depth, segments)
+      default:
+        return this.createCSGCylindricalMesh(tool as CylindricalTool, depth, segments)
+    }
+  }
+
+  // Create tool sweep mesh along a path for realistic material removal
+  public createToolSweepMesh(tool: CNCTool, path: THREE.Vector3[], operation: string): THREE.Mesh {
+    const toolProfile = this.getToolProfile(tool)
+    const sweepGeometry = this.createSweepGeometry(toolProfile, path)
+
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor(tool.shape),
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(sweepGeometry, material)
+    mesh.userData = {
+      tool,
+      operation,
+      toolType: 'sweep',
+      isCSGTool: true
+    }
+
+    return mesh
+  }
+
   private createCylindricalToolMesh(tool: CylindricalTool, height: number): THREE.Mesh {
     const radius = tool.diameter / 2
     const geometry = new THREE.CylinderGeometry(radius, radius, height, 32)
@@ -707,6 +750,276 @@ export class CNCToolService {
     return mesh
   }
 
+  // CSG-specific tool mesh creation methods
+  private createCSGCylindricalMesh(tool: CylindricalTool, depth: number, segments: number): THREE.Mesh {
+    const radius = tool.diameter / 2
+    const geometry = new THREE.CylinderGeometry(radius, radius, depth, segments)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor('cylindrical'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'cylindrical', isCSGTool: true }
+    return mesh
+  }
+
+  private createCSGConicalMesh(tool: ConicalTool, depth: number, segments: number): THREE.Mesh {
+    const topRadius = tool.diameter / 2
+    const tipRadius = (tool.tipDiameter || 0.1) / 2
+
+    // Calculate bottom radius based on depth and tip angle
+    const halfAngle = (tool.tipAngle * Math.PI) / 360 // Convert to radians and half angle
+    const bottomRadius = Math.max(tipRadius, topRadius - (depth * Math.tan(halfAngle)))
+
+    const geometry = new THREE.CylinderGeometry(bottomRadius, topRadius, depth, segments)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor('conical'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'conical', isCSGTool: true }
+    return mesh
+  }
+
+  private createCSGBallnoseMesh(tool: BallnoseTool, depth: number, segments: number): THREE.Mesh {
+    const radius = tool.diameter / 2
+    const ballRadius = tool.ballRadius
+
+    // Create compound geometry: cylinder + hemisphere
+    const cylinderHeight = Math.max(0, depth - ballRadius)
+    const group = new THREE.Group()
+
+    // Add cylinder part if needed
+    if (cylinderHeight > 0) {
+      const cylinderGeometry = new THREE.CylinderGeometry(radius, radius, cylinderHeight, segments)
+      const cylinderMesh = new THREE.Mesh(cylinderGeometry, new THREE.MeshLambertMaterial({
+        color: this.getToolColor('ballnose'),
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide
+      }))
+      cylinderMesh.position.y = ballRadius / 2
+      group.add(cylinderMesh)
+    }
+
+    // Add ball end
+    const sphereGeometry = new THREE.SphereGeometry(ballRadius, segments, segments / 2, 0, Math.PI * 2, 0, Math.PI / 2)
+    const sphereMesh = new THREE.Mesh(sphereGeometry, new THREE.MeshLambertMaterial({
+      color: this.getToolColor('ballnose'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    }))
+    sphereMesh.position.y = -(depth - ballRadius) / 2
+    group.add(sphereMesh)
+
+    // Convert group to single mesh for CSG operations
+    const combinedGeometry = this.mergeGroupGeometries(group)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor('ballnose'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(combinedGeometry, material)
+    mesh.userData = { tool, toolType: 'ballnose', isCSGTool: true }
+    return mesh
+  }
+
+  private createCSGRadialMesh(tool: RadialTool, depth: number, segments: number): THREE.Mesh {
+    const radius = tool.diameter / 2
+    const cornerRadius = tool.cornerRadius
+
+    // Create cylinder with rounded bottom edge (simplified)
+    const geometry = new THREE.CylinderGeometry(radius - cornerRadius, radius, depth, segments)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor('radial'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'radial', isCSGTool: true }
+    return mesh
+  }
+
+  private createCSGSpecialMesh(tool: SpecialTool, depth: number, segments: number): THREE.Mesh {
+    // For special tools, check if there's a custom profile
+    if (tool.profile && tool.specialType === 'custom') {
+      return this.createCustomProfileMesh(tool, depth, segments)
+    }
+
+    // Default to cylindrical for unknown special tools
+    const radius = tool.diameter / 2
+    const geometry = new THREE.CylinderGeometry(radius, radius, depth, segments)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor('special'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'special', isCSGTool: true }
+    return mesh
+  }
+
+  // Helper methods for tool mesh creation
+  private getToolColor(shape: string): number {
+    const colors = {
+      cylindrical: 0x888888,
+      conical: 0x666666,
+      ballnose: 0x999999,
+      radial: 0x777777,
+      special: 0x555555
+    }
+    return colors[shape as keyof typeof colors] || 0x888888
+  }
+
+  private mergeGroupGeometries(group: THREE.Group): THREE.BufferGeometry {
+    const geometries: THREE.BufferGeometry[] = []
+
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.geometry) {
+        const geometry = child.geometry.clone()
+        geometry.applyMatrix4(child.matrixWorld)
+        geometries.push(geometry)
+      }
+    })
+
+    if (geometries.length === 0) {
+      return new THREE.CylinderGeometry(1, 1, 1, 8)
+    }
+
+    if (geometries.length === 1) {
+      return geometries[0]
+    }
+
+    // Merge multiple geometries
+    const mergedGeometry = new THREE.BufferGeometry()
+    const positions: number[] = []
+    const normals: number[] = []
+    const uvs: number[] = []
+
+    geometries.forEach(geometry => {
+      const positionAttribute = geometry.getAttribute('position')
+      const normalAttribute = geometry.getAttribute('normal')
+      const uvAttribute = geometry.getAttribute('uv')
+
+      if (positionAttribute) {
+        positions.push(...Array.from(positionAttribute.array))
+      }
+      if (normalAttribute) {
+        normals.push(...Array.from(normalAttribute.array))
+      }
+      if (uvAttribute) {
+        uvs.push(...Array.from(uvAttribute.array))
+      }
+    })
+
+    mergedGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    if (normals.length > 0) {
+      mergedGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+    }
+    if (uvs.length > 0) {
+      mergedGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+    }
+
+    mergedGeometry.computeBoundingBox()
+    mergedGeometry.computeBoundingSphere()
+
+    return mergedGeometry
+  }
+
+  private createCustomProfileMesh(tool: SpecialTool, depth: number, segments: number): THREE.Mesh {
+    // For now, default to cylindrical - can be enhanced later with SVG path parsing
+    const radius = tool.diameter / 2
+    const geometry = new THREE.CylinderGeometry(radius, radius, depth, segments)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor('special'),
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'custom', isCSGTool: true }
+    return mesh
+  }
+
+  private getToolProfile(tool: CNCTool): THREE.Shape {
+    const radius = tool.diameter / 2
+    const shape = new THREE.Shape()
+
+    switch (tool.shape) {
+      case 'cylindrical':
+        // Rectangular profile for cylindrical tools
+        shape.moveTo(-radius, 0)
+        shape.lineTo(radius, 0)
+        shape.lineTo(radius, -radius * 0.1) // Small chamfer
+        shape.lineTo(-radius, -radius * 0.1)
+        shape.closePath()
+        break
+
+      case 'conical':
+        const conicalTool = tool as ConicalTool
+        const tipRadius = (conicalTool.tipDiameter || 0.1) / 2
+        shape.moveTo(-tipRadius, 0)
+        shape.lineTo(tipRadius, 0)
+        shape.lineTo(radius, -radius)
+        shape.lineTo(-radius, -radius)
+        shape.closePath()
+        break
+
+      case 'ballnose':
+        const ballTool = tool as BallnoseTool
+        const ballRadius = ballTool.ballRadius
+        // Simplified ball profile
+        shape.moveTo(-radius, 0)
+        shape.lineTo(radius, 0)
+        shape.quadraticCurveTo(radius, -ballRadius / 2, 0, -ballRadius)
+        shape.quadraticCurveTo(-radius, -ballRadius / 2, -radius, 0)
+        break
+
+      default:
+        // Default cylindrical profile
+        shape.moveTo(-radius, 0)
+        shape.lineTo(radius, 0)
+        shape.lineTo(radius, -radius * 0.1)
+        shape.lineTo(-radius, -radius * 0.1)
+        shape.closePath()
+    }
+
+    return shape
+  }
+
+  private createSweepGeometry(profile: THREE.Shape, path: THREE.Vector3[]): THREE.BufferGeometry {
+    if (path.length < 2) {
+      // Fallback to simple extrusion
+      const extrudeSettings = {
+        depth: 10,
+        bevelEnabled: false
+      }
+      return new THREE.ExtrudeGeometry(profile, extrudeSettings)
+    }
+
+    // Create curve from path points
+    const curve = new THREE.CatmullRomCurve3(path)
+
+    // Create tube geometry along the curve
+    const tubeGeometry = new THREE.TubeGeometry(curve, path.length * 2, profile.getPoints().length, 8, false)
+
+    return tubeGeometry
+  }
+
   // Create tool path geometry from draw commands
   public createToolPathFromCommands(commands: any[], tool: CNCTool, thickness: number = 5): THREE.Mesh[] {
     const meshes: THREE.Mesh[] = []
@@ -747,6 +1060,328 @@ export class CNCToolService {
     return meshes
   }
 
+  // Enhanced tool path creation with operation-specific meshes
+  public createOperationToolMeshes(commands: any[], tool: CNCTool, operation: string, depth: number = 5): THREE.Mesh[] {
+    const meshes: THREE.Mesh[] = []
+
+    commands.forEach((command, index) => {
+      let toolMesh: THREE.Mesh | null = null
+
+      switch (command.command_type) {
+        case 'line':
+          toolMesh = this.createLineToolMesh(command, tool, operation, depth)
+          break
+        case 'rectangle':
+          toolMesh = this.createRectangleToolMesh(command, tool, operation, depth)
+          break
+        case 'circle':
+          toolMesh = this.createCircleToolMesh(command, tool, operation, depth)
+          break
+        case 'arc':
+          toolMesh = this.createArcToolMesh(command, tool, operation, depth)
+          break
+        default:
+          return // Skip unsupported command types
+      }
+
+      if (toolMesh) {
+        toolMesh.userData = {
+          command,
+          tool,
+          operation,
+          index,
+          isOperationMesh: true
+        }
+
+        meshes.push(toolMesh)
+      }
+    })
+
+    return meshes
+  }
+
+  // Create tool mesh for line operations
+  private createLineToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
+    const startPoint = new THREE.Vector3(command.x1, 0, command.y1)
+    const endPoint = new THREE.Vector3(command.x2, 0, command.y2)
+    const path = [startPoint, endPoint]
+
+    // For line operations, create a swept tool mesh
+    if (operation === 'profiling' || operation === 'finishing') {
+      return this.createToolSweepMesh(tool, path, operation)
+    }
+
+    // For other operations, use CSG tool mesh positioned at line center
+    const toolMesh = this.createCSGToolMesh(tool, operation, depth)
+    const midX = (command.x1 + command.x2) / 2
+    const midY = (command.y1 + command.y2) / 2
+    toolMesh.position.set(midX, -depth / 2, midY)
+
+    // Rotate tool to align with line direction
+    const direction = endPoint.clone().sub(startPoint).normalize()
+    const angle = Math.atan2(direction.x, direction.z)
+    toolMesh.rotation.y = angle
+
+    return toolMesh
+  }
+
+  // Create tool mesh for rectangle operations
+  private createRectangleToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
+    const centerX = (command.x1 + command.x2) / 2
+    const centerY = (command.y1 + command.y2) / 2
+    const width = Math.abs(command.x2 - command.x1)
+    const height = Math.abs(command.y2 - command.y1)
+
+    if (operation === 'pocketing') {
+      // For pocketing, create a mesh that covers the entire rectangle
+      return this.createPocketingMesh(tool, width, height, depth, centerX, centerY)
+    }
+
+    // For other operations, use standard tool mesh
+    const toolMesh = this.createCSGToolMesh(tool, operation, depth)
+    toolMesh.position.set(centerX, -depth / 2, centerY)
+    return toolMesh
+  }
+
+  // Create tool mesh for circle operations
+  private createCircleToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
+    const centerX = command.x1
+    const centerY = command.y1
+    const radius = command.radius
+
+    if (operation === 'drilling') {
+      // For drilling, create a cylindrical mesh at the circle center
+      const drillMesh = this.createCSGToolMesh(tool, operation, depth)
+      drillMesh.position.set(centerX, -depth / 2, centerY)
+      return drillMesh
+    }
+
+    if (operation === 'pocketing') {
+      // For circular pocketing, create a cylindrical pocket
+      return this.createCircularPocketMesh(tool, radius, depth, centerX, centerY)
+    }
+
+    // For profiling, create a torus-like mesh following the circle
+    return this.createCircularProfileMesh(tool, radius, depth, centerX, centerY)
+  }
+
+  // Create tool mesh for arc operations
+  private createArcToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
+    const centerX = command.x1
+    const centerY = command.y1
+    const radius = command.radius
+
+    // For arcs, create a swept tool mesh along the arc path
+    const arcPath = this.generateArcPath(centerX, centerY, radius, command.startAngle || 0, command.endAngle || Math.PI)
+
+    if (operation === 'profiling' || operation === 'finishing') {
+      return this.createToolSweepMesh(tool, arcPath, operation)
+    }
+
+    // For other operations, use tool mesh at arc center
+    const toolMesh = this.createCSGToolMesh(tool, operation, depth)
+    toolMesh.position.set(centerX, -depth / 2, centerY)
+    return toolMesh
+  }
+
+  // Create pocketing mesh for rectangular areas
+  private createPocketingMesh(tool: CNCTool, width: number, height: number, depth: number, centerX: number, centerY: number): THREE.Mesh {
+    // Create a box geometry that represents the material to be removed
+    const geometry = new THREE.BoxGeometry(width, depth, height)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor(tool.shape),
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(centerX, -depth / 2, centerY)
+    mesh.userData = { tool, toolType: 'pocketing', isCSGTool: true }
+    return mesh
+  }
+
+  // Create circular pocket mesh
+  private createCircularPocketMesh(tool: CNCTool, radius: number, depth: number, centerX: number, centerY: number): THREE.Mesh {
+    const geometry = new THREE.CylinderGeometry(radius, radius, depth, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor(tool.shape),
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(centerX, -depth / 2, centerY)
+    mesh.userData = { tool, toolType: 'circular-pocket', isCSGTool: true }
+    return mesh
+  }
+
+  // Create circular profile mesh (torus-like for profiling operations)
+  private createCircularProfileMesh(tool: CNCTool, radius: number, depth: number, centerX: number, centerY: number): THREE.Mesh {
+    const toolRadius = tool.diameter / 2
+    const geometry = new THREE.TorusGeometry(radius, toolRadius, 8, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: this.getToolColor(tool.shape),
+      transparent: true,
+      opacity: 0.7,
+      side: THREE.DoubleSide
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(centerX, -depth / 2, centerY)
+    mesh.rotation.x = Math.PI / 2 // Rotate to lie flat
+    mesh.userData = { tool, toolType: 'circular-profile', isCSGTool: true }
+    return mesh
+  }
+
+  // Generate path points for arc operations
+  private generateArcPath(centerX: number, centerY: number, radius: number, startAngle: number, endAngle: number): THREE.Vector3[] {
+    const points: THREE.Vector3[] = []
+    const segments = Math.max(8, Math.floor(Math.abs(endAngle - startAngle) * radius / 5)) // Adaptive segments
+
+    for (let i = 0; i <= segments; i++) {
+      const angle = startAngle + (endAngle - startAngle) * (i / segments)
+      const x = centerX + radius * Math.cos(angle)
+      const y = centerY + radius * Math.sin(angle)
+      points.push(new THREE.Vector3(x, 0, y))
+    }
+
+    return points
+  }
+
+  // Tool mesh caching for performance optimization
+  private toolMeshCache = new Map<string, THREE.Mesh>()
+
+  public getCachedToolMesh(tool: CNCTool, operation: string, depth: number): THREE.Mesh | null {
+    const cacheKey = `${tool.id}-${operation}-${depth}-${tool.diameter}`
+    return this.toolMeshCache.get(cacheKey) || null
+  }
+
+  public cacheToolMesh(tool: CNCTool, operation: string, depth: number, mesh: THREE.Mesh): void {
+    const cacheKey = `${tool.id}-${operation}-${depth}-${tool.diameter}`
+    this.toolMeshCache.set(cacheKey, mesh.clone())
+  }
+
+  public clearToolMeshCache(): void {
+    this.toolMeshCache.clear()
+  }
+
+  // Batch tool mesh creation for multiple operations
+  public createBatchToolMeshes(operations: Array<{
+    commands: any[]
+    tool: CNCTool
+    operation: string
+    depth: number
+  }>): THREE.Mesh[] {
+    const allMeshes: THREE.Mesh[] = []
+
+    operations.forEach(({ commands, tool, operation, depth }) => {
+      const meshes = this.createOperationToolMeshes(commands, tool, operation, depth)
+      allMeshes.push(...meshes)
+    })
+
+    return allMeshes
+  }
+
+  // Create optimized tool mesh for CSG operations with reduced geometry complexity
+  public createOptimizedCSGMesh(tool: CNCTool, operation: string, depth: number, lodLevel: number = 1): THREE.Mesh {
+    const cachedMesh = this.getCachedToolMesh(tool, operation, depth)
+    if (cachedMesh) {
+      return cachedMesh.clone()
+    }
+
+    // Create mesh with LOD consideration (could be enhanced to use different geometries based on lodLevel)
+    const mesh = this.createCSGToolMesh(tool, operation, depth)
+
+    // Apply LOD optimizations if needed
+    if (lodLevel < 1) {
+      this.optimizeMeshForLOD(mesh, lodLevel)
+    }
+
+    this.cacheToolMesh(tool, operation, depth, mesh)
+
+    return mesh
+  }
+
+  // Optimize mesh geometry for lower LOD levels
+  private optimizeMeshForLOD(mesh: THREE.Mesh, lodLevel: number): void {
+    if (lodLevel >= 1) return
+
+    const geometry = mesh.geometry
+    if (geometry instanceof THREE.BufferGeometry) {
+      // Reduce vertex count for lower LOD
+      const positionAttribute = geometry.getAttribute('position')
+      if (positionAttribute && positionAttribute.count > 100) {
+        // Simple decimation - could be enhanced with proper mesh simplification
+        const reductionFactor = Math.max(0.1, lodLevel)
+        const targetVertexCount = Math.floor(positionAttribute.count * reductionFactor)
+
+        // For now, just mark the mesh as optimized
+        mesh.userData.optimizedLOD = lodLevel
+        mesh.userData.originalVertexCount = positionAttribute.count
+        mesh.userData.targetVertexCount = targetVertexCount
+      }
+    }
+  }
+
+  // Validate tool mesh for CSG operations
+  public validateToolMesh(mesh: THREE.Mesh): boolean {
+    if (!mesh || !mesh.geometry) {
+      return false
+    }
+
+    const geometry = mesh.geometry
+
+    // Check if geometry has valid attributes
+    if (!geometry.getAttribute('position')) {
+      return false
+    }
+
+    // Check if geometry is not empty
+    const positionAttribute = geometry.getAttribute('position')
+    if (positionAttribute.count === 0) {
+      return false
+    }
+
+    // Check bounding box
+    geometry.computeBoundingBox()
+    if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) {
+      return false
+    }
+
+    return true
+  }
+
+  // Get tool mesh statistics for debugging
+  public getToolMeshStats(mesh: THREE.Mesh): {
+    vertices: number
+    faces: number
+    boundingBox: THREE.Box3 | null
+    volume: number
+  } {
+    const geometry = mesh.geometry
+    const positionAttribute = geometry.getAttribute('position')
+    const vertices = positionAttribute ? positionAttribute.count : 0
+    const faces = geometry.index ? geometry.index.count / 3 : vertices / 3
+
+    geometry.computeBoundingBox()
+    const boundingBox = geometry.boundingBox
+
+    let volume = 0
+    if (boundingBox) {
+      const size = boundingBox.getSize(new THREE.Vector3())
+      volume = size.x * size.y * size.z
+    }
+
+    return {
+      vertices,
+      faces,
+      boundingBox,
+      volume
+    }
+  }
+
   // Test method to verify tool geometry creation
   public testToolCreation(): void {
     console.log('Testing CNC tool geometry creation...')
@@ -772,6 +1407,75 @@ export class CNCToolService {
       }
     })
   }
+
+  // Enhanced test method for new CSG tool mesh creation
+  public testCSGToolMeshCreation(): void {
+    console.log('Testing enhanced CSG tool mesh creation...')
+
+    const testOperations = ['roughing', 'finishing', 'profiling', 'drilling', 'pocketing']
+    const testTools = [
+      this.getToolById('cyl-6mm'),
+      this.getToolById('con-90deg'),
+      this.getToolById('ball-6mm')
+    ]
+
+    testTools.forEach(tool => {
+      if (tool) {
+        testOperations.forEach(operation => {
+          try {
+            const mesh = this.createCSGToolMesh(tool, operation, 5)
+            const stats = this.getToolMeshStats(mesh)
+            const isValid = this.validateToolMesh(mesh)
+
+            console.log(`✓ ${tool.name} - ${operation}:`, {
+              valid: isValid,
+              vertices: stats.vertices,
+              faces: stats.faces,
+              volume: stats.volume.toFixed(2)
+            })
+          } catch (error) {
+            console.error(`✗ Failed to create CSG mesh for ${tool.name} - ${operation}:`, error)
+          }
+        })
+      }
+    })
+
+    // Test tool path creation with sample commands
+    const sampleCommands = [
+      { command_type: 'line', x1: 0, y1: 0, x2: 100, y2: 0, radius: 0, color: '#000', size: 1, text: '', layer_name: 'test', thickness: 5 },
+      { command_type: 'circle', x1: 50, y1: 50, x2: 0, y2: 0, radius: 25, color: '#000', size: 1, text: '', layer_name: 'test', thickness: 5 },
+      { command_type: 'rectangle', x1: 0, y1: 0, x2: 50, y2: 30, radius: 0, color: '#000', size: 1, text: '', layer_name: 'test', thickness: 5 }
+    ]
+
+    const testTool = this.getToolById('cyl-6mm')
+    if (testTool) {
+      try {
+        const operationMeshes = this.createOperationToolMeshes(sampleCommands, testTool, 'pocketing', 5)
+        console.log(`✓ Created ${operationMeshes.length} operation meshes for sample commands`)
+
+        operationMeshes.forEach((mesh, index) => {
+          const stats = this.getToolMeshStats(mesh)
+          console.log(`  Mesh ${index + 1}: ${stats.vertices} vertices, ${stats.faces} faces`)
+        })
+      } catch (error) {
+        console.error('✗ Failed to create operation meshes:', error)
+      }
+    }
+
+    console.log('CSG tool mesh creation test completed.')
+  }
 }
 
 export const cncToolService = CNCToolService.getInstance()
+
+// Auto-run enhanced test on service initialization (development only)
+if (process.env.NODE_ENV === 'development') {
+  // Delay test to ensure Three.js is loaded
+  setTimeout(() => {
+    try {
+      cncToolService.testCSGToolMeshCreation()
+    } catch (error) {
+      console.warn('CSG tool mesh test failed:', error)
+    }
+  }, 1000)
+}

@@ -275,3 +275,41 @@ export interface CNCToolMesh {
   radial: (tool: RadialTool, height?: number) => THREE.Mesh
   special: (tool: SpecialTool, height?: number) => THREE.Mesh
 }
+
+// Enhanced tool mesh interfaces for operations
+export interface OperationToolMesh {
+  tool: CNCTool
+  operation: string
+  mesh: THREE.Mesh
+  depth: number
+  commands: DrawCommand[]
+  isOptimized?: boolean
+  lodLevel?: number
+}
+
+export interface ToolMeshStats {
+  vertices: number
+  faces: number
+  boundingBox: THREE.Box3 | null
+  volume: number
+  tool: CNCTool
+  operation: string
+}
+
+export interface ToolSweepOptions {
+  tool: CNCTool
+  path: THREE.Vector3[]
+  operation: string
+  stepDown?: number
+  feedRate?: number
+  spindleSpeed?: number
+}
+
+export interface CSGToolMeshOptions {
+  tool: CNCTool
+  operation: string
+  depth: number
+  segments?: number
+  lodLevel?: number
+  useCache?: boolean
+}
