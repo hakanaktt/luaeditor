@@ -159,6 +159,8 @@ import { CSG } from 'three-csg-ts'
 import { OrbitControls } from '../utils/OrbitControls'
 import { layerToolDetector } from '@/services/layerToolDetector'
 import type { LayerAnalysis } from '@/services/layerToolDetector'
+import { cncToolService } from '@/services/cncToolService'
+import type { CNCTool } from '@/types'
 
 interface DrawCommand {
   command_type: string
@@ -171,6 +173,7 @@ interface DrawCommand {
   size: number
   text: string
   layer_name: string
+  thickness?: number
 }
 
 interface OperationLayer {
@@ -550,11 +553,86 @@ onUnmounted(() => {
   }
 })
 
-// Watch for draw commands changes (future CSG operations)
+// Watch for draw commands changes and create tool objects for CSG operations
 watch(() => props.drawCommands, (newCommands) => {
-  // TODO: Convert turtle graphics commands to CSG operations
   console.log('ThreeCanvas received draw commands:', newCommands.length)
+  if (scene) {
+    createToolObjects()
+  }
 }, { immediate: true })
+
+// Create 3D tool objects from draw commands for CSG subtraction
+const createToolObjects = () => {
+  if (!props.drawCommands || props.drawCommands.length === 0) {
+    return
+  }
+
+  // Clear existing tool objects
+  const existingTools = scene.children.filter(child => child.userData?.isToolObject)
+  existingTools.forEach(tool => scene.remove(tool))
+
+  // Group commands by layer and create tool objects
+  const layerGroups = new Map<string, DrawCommand[]>()
+
+  props.drawCommands.forEach(command => {
+    if (!layerGroups.has(command.layer_name)) {
+      layerGroups.set(command.layer_name, [])
+    }
+    layerGroups.get(command.layer_name)!.push(command)
+  })
+
+  layerGroups.forEach((commands, layerName) => {
+    // Skip non-machinable layers
+    if (layerName.toLowerCase().includes('lua') ||
+        layerName.toLowerCase().startsWith('lmm')) {
+      return
+    }
+
+    // Detect tool for this layer
+    const tool = cncToolService.detectToolFromLayerName(layerName)
+    if (!tool) {
+      console.warn(`No tool detected for layer: ${layerName}`)
+      return
+    }
+
+    // Get thickness from commands (use first command with thickness, or default)
+    const commandWithThickness = commands.find(cmd => cmd.thickness !== undefined && cmd.thickness !== null)
+    const thickness = commandWithThickness?.thickness ? Math.abs(commandWithThickness.thickness) : 5
+
+    console.log(`Creating tool objects for layer ${layerName} with tool ${tool.name} and thickness ${thickness}`)
+
+    // Create tool meshes for each command
+    const toolMeshes = cncToolService.createToolPathFromCommands(commands, tool, thickness)
+
+    toolMeshes.forEach((toolMesh, index) => {
+      toolMesh.userData.isToolObject = true
+      toolMesh.userData.layerName = layerName
+      toolMesh.userData.toolIndex = index
+
+      // Set material color based on tool type
+      const material = toolMesh.material as THREE.MeshLambertMaterial
+      switch (tool.shape) {
+        case 'cylindrical':
+          material.color.setHex(0x888888)
+          break
+        case 'conical':
+          material.color.setHex(0x666666)
+          break
+        case 'ballnose':
+          material.color.setHex(0x999999)
+          break
+        case 'radial':
+          material.color.setHex(0x777777)
+          break
+        case 'special':
+          material.color.setHex(0x555555)
+          break
+      }
+
+      scene.add(toolMesh)
+    })
+  })
+}
 
 // Tool icon helper
 const getToolIcon = (shape: string) => {

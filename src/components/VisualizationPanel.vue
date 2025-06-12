@@ -172,6 +172,7 @@ interface DrawCommand {
   size: number
   text: string
   layer_name: string
+  thickness?: number
 }
 
 interface Props {

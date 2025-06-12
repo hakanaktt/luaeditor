@@ -19,6 +19,7 @@ pub struct DrawCommand {
     pub size: f64,
     pub text: String,
     pub layer_name: String,
+    pub thickness: Option<f64>, // Thickness/depth information for 3D operations
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -346,9 +347,10 @@ impl NativeLuaEngine {
                 output.push(format!("Drawing line from ({:.2}, {:.2}) to ({:.2}, {:.2})",
                     state.x, state.y, new_x, new_y));
 
-                // Get current layer from global variable
+                // Get current layer and thickness from global variables
                 let globals = lua.globals();
                 let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+                let current_thickness: Option<f64> = globals.get("currentThickness").ok();
 
                 commands.push(DrawCommand {
                     command_type: "line".to_string(),
@@ -361,6 +363,7 @@ impl NativeLuaEngine {
                     size: state.pen_size,
                     text: String::new(),
                     layer_name: current_layer,
+                    thickness: current_thickness,
                 });
                 println!("Added line draw command, total commands: {}", commands.len());
             } else {
@@ -531,6 +534,7 @@ impl NativeLuaEngine {
                 size: state.pen_size,
                 text: text_content,
                 layer_name: current_layer,
+                thickness: None, // Text doesn't have thickness
             });
 
             Ok(())
@@ -561,9 +565,10 @@ impl NativeLuaEngine {
             println!("Turtle crcl called with x: {}, y: {}, radius: {}", x, y, radius);
             output.push(format!("Circle at ({:.2}, {:.2}) with radius {:.2}", x, y, radius));
 
-            // Get current layer from global variable
+            // Get current layer and thickness from global variables
             let globals = lua.globals();
             let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+            let current_thickness: Option<f64> = globals.get("currentThickness").ok();
 
             // Add draw command for circle
             commands.push(DrawCommand {
@@ -577,6 +582,7 @@ impl NativeLuaEngine {
                 size: state.pen_size,
                 text: String::new(),
                 layer_name: current_layer,
+                thickness: current_thickness,
             });
             println!("Added circle draw command, total commands: {}", commands.len());
             Ok(())
@@ -596,9 +602,10 @@ impl NativeLuaEngine {
 
             output.push(format!("Line from ({:.2}, {:.2}) to ({:.2}, {:.2})", x1, y1, x2, y2));
 
-            // Get current layer from global variable
+            // Get current layer and thickness from global variables
             let globals = lua.globals();
             let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+            let current_thickness: Option<f64> = globals.get("currentThickness").ok();
 
             // Add draw command for line
             commands.push(DrawCommand {
@@ -612,6 +619,7 @@ impl NativeLuaEngine {
                 size: state.pen_size,
                 text: String::new(),
                 layer_name: current_layer,
+                thickness: current_thickness,
             });
             Ok(())
         })?;
@@ -637,9 +645,10 @@ impl NativeLuaEngine {
             output.push(format!("Rectangle at ({:.2}, {:.2}) size {:.2}x{:.2} radius {:.2}",
                 x, y, width, height, corner_radius));
 
-            // Get current layer from global variable
+            // Get current layer and thickness from global variables
             let globals = lua.globals();
             let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+            let current_thickness: Option<f64> = globals.get("currentThickness").ok();
 
             // Add draw command for rectangle
             commands.push(DrawCommand {
@@ -653,6 +662,7 @@ impl NativeLuaEngine {
                 size: state.pen_size,
                 text: String::new(),
                 layer_name: current_layer,
+                thickness: current_thickness,
             });
             Ok(())
         })?;
@@ -686,9 +696,10 @@ impl NativeLuaEngine {
 
             output.push(format!("Pixel at ({:.2}, {:.2})", x, y));
 
-            // Get current layer from global variable
+            // Get current layer and thickness from global variables
             let globals = lua.globals();
             let current_layer: String = globals.get("currentLayerName").unwrap_or_else(|_| "default".to_string());
+            let current_thickness: Option<f64> = globals.get("currentThickness").ok();
 
             // Add draw command for a small circle to represent a pixel
             commands.push(DrawCommand {
@@ -702,6 +713,7 @@ impl NativeLuaEngine {
                 size: state.pen_size,
                 text: String::new(),
                 layer_name: current_layer,
+                thickness: current_thickness,
             });
             Ok(())
         })?;
@@ -799,12 +811,18 @@ impl NativeLuaEngine {
         // setThickness function
         let adeko_state_clone = Arc::clone(&adeko_state);
         let output_buffer_clone = Arc::clone(&output_buffer);
-        let set_thickness_fn = self.lua.create_function(move |_, thickness: f64| {
+        let lua_ref = &self.lua;
+        let set_thickness_fn = lua_ref.create_function(move |lua, thickness: f64| {
             let mut state = adeko_state_clone.lock().unwrap();
             let mut output = output_buffer_clone.lock().unwrap();
 
             state.current_thickness = thickness;
             output.push(format!("Set thickness to: {}", thickness));
+
+            // Also set the global currentThickness variable for drawing commands
+            let globals = lua.globals();
+            globals.set("currentThickness", thickness)?;
+
             Ok(())
         })?;
         adeko_lib.set("setThickness", set_thickness_fn)?;
@@ -929,6 +947,7 @@ impl NativeLuaEngine {
         globals.set("edge4thickness", 0.4)?;
         globals.set("doesSizeIncludeEdgeThickness", "false")?;
         globals.set("currentLayerName", "LUA")?;
+        globals.set("currentThickness", 0.0)?; // Initialize current thickness
 
         Ok(())
     }

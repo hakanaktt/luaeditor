@@ -54,6 +54,26 @@ export class LayerToolDetector {
       }
     }
 
+    // Check for prohibited layers based on user feedback
+    if (this.isProhibitedLayer(layer)) {
+      return {
+        tool: null,
+        operation: 'prohibited',
+        surface: 'none',
+        toolType: 'none'
+      }
+    }
+
+    // Check for generic layers that should be prohibited
+    if (this.isGenericLayer(layer)) {
+      return {
+        tool: null,
+        operation: 'prohibited',
+        surface: 'none',
+        toolType: 'none'
+      }
+    }
+
     // Determine surface (top/bottom)
     const surface = this.detectSurface(lowerLayer)
 
@@ -120,11 +140,19 @@ export class LayerToolDetector {
         return { toolType: 'cylindrical', operation: 'grooving' }
 
       case 'H':
-        // Contour operations
+        // Contour operations - distinguish inner/outer
+        const isInnerContour = lowerLayer.includes('ic') || lowerLayer.includes('inner')
+        const isOuterContour = lowerLayer.includes('dis') || lowerLayer.includes('outer')
+
         if (lowerLayer.includes('freze')) {
-          return { toolType: 'cylindrical', operation: 'contouring' }
+          const operation = isInnerContour ? 'inner-contouring' : isOuterContour ? 'outer-contouring' : 'contouring'
+          return { toolType: 'cylindrical', operation }
         } else if (lowerLayer.includes('ballnose')) {
-          return { toolType: 'ballnose', operation: 'contouring' }
+          const operation = isInnerContour ? 'inner-contouring' : isOuterContour ? 'outer-contouring' : 'contouring'
+          return { toolType: 'ballnose', operation }
+        } else if (lowerLayer.includes('desen')) {
+          const operation = isOuterContour ? 'outer-contouring' : 'contouring'
+          return { toolType: 'special', operation } // As per user feedback
         }
         return { toolType: 'cylindrical', operation: 'contouring' }
 
@@ -141,19 +169,47 @@ export class LayerToolDetector {
         return { toolType: 'cylindrical', operation: 'profiling' }
 
       default:
-        // Analyze by tool type keywords
-        if (lowerLayer.includes('freze')) {
+        // Simple numeric patterns (20MM, 30MM, 5MM)
+        const simpleNumericMatch = fullLayer.match(/^(\d+)MM$/i)
+        if (simpleNumericMatch) {
+          return { toolType: 'cylindrical', operation: 'machining' }
+        }
+
+        // Analyze by tool type keywords - Enhanced patterns
+        if (lowerLayer.includes('freze') || lowerLayer.includes('roughing') || lowerLayer.includes('finishing')) {
           return { toolType: 'cylindrical', operation: 'machining' }
         } else if (lowerLayer.includes('ballnose')) {
-          return { toolType: 'ballnose', operation: 'finishing' }
-        } else if (lowerLayer.includes('aciliv') || lowerLayer.includes('v_')) {
+          return { toolType: 'ballnose', operation: 'machining' } // Changed from finishing per feedback
+        } else if (lowerLayer.includes('baliksırti') || lowerLayer.includes('balıksırtı') || lowerLayer.includes('baliksırti')) {
+          return { toolType: 'special', operation: 'machining' } // Changed to special per feedback
+        } else if (lowerLayer.includes('aciliv') && lowerLayer.match(/\d+/)) {
+          return { toolType: 'conical', operation: 'machining' } // Changed from v-cutting per feedback
+        } else if (lowerLayer.includes('vgroove') || lowerLayer.includes('v_oyuk45')) {
           return { toolType: 'conical', operation: 'v-cutting' }
+        } else if (lowerLayer.includes('oyuk') && lowerLayer.match(/\d+/)) {
+          return { toolType: 'cylindrical', operation: 'pocketing' } // Special case per feedback
+        } else if (lowerLayer.includes('form') || lowerLayer.includes('jnotch') || lowerLayer.includes('dovetail')) {
+          return { toolType: 'special', operation: 'machining' }
+        } else if (lowerLayer.includes('desen') || lowerLayer.includes('pattern')) {
+          return { toolType: 'ballnose', operation: 'machining' } // Changed from pattern per feedback
+        } else if (lowerLayer.includes('kanal')) {
+          return { toolType: 'cylindrical', operation: 'machining' } // Changed from grooving per feedback
+        } else if (lowerLayer.includes('cizgi') || lowerLayer.includes('line')) {
+          return { toolType: 'cylindrical', operation: 'machining' } // Changed from line-cutting per feedback
+        } else if (lowerLayer.includes('edge') && lowerLayer.includes('radius')) {
+          return { toolType: 'radial', operation: 'edge-profiling' }
         }
         return { toolType: 'cylindrical', operation: 'machining' }
     }
   }
 
   private extractDiameter(layer: string): number | undefined {
+    // Simple numeric patterns first (20MM, 30MM, 5MM)
+    const simpleNumericMatch = layer.match(/^(\d+)MM$/i)
+    if (simpleNumericMatch) {
+      return parseInt(simpleNumericMatch[1])
+    }
+
     // Look for patterns like "20mm", "Freze20mm", "Ballnose6mm"
     const diameterMatch = layer.match(/(\d+)mm/i)
     if (diameterMatch) {
@@ -166,16 +222,24 @@ export class LayerToolDetector {
       return parseInt(toolNumberMatch[1])
     }
 
-    // Look for standalone numbers after tool type (more comprehensive)
-    const standaloneMatches = [
+    // Enhanced patterns for better detection
+    const enhancedMatches = [
       layer.match(/(freze|ballnose|aciliv)(\d+)/i),
       layer.match(/(\d+)(freze|ballnose)/i),
+      layer.match(/ballnose[_]?(\d+)/i), // Ballnose_12
+      layer.match(/freze(\d+)mm/i), // Freze3mm
+      layer.match(/(\d+)mmfreze/i), // 20mmFreze
+      layer.match(/roughing[_]?(\d+)mm/i), // TOP_Roughing_10mm
+      layer.match(/finishing[_]?(\d+)mm/i), // TOP_Finishing_6mm
+      layer.match(/ballnose[_]?(\d+)mm/i), // TOP_Ballnose_6mm
+      layer.match(/radius[_]?(\d+)mm/i), // EDGE_Profile_2mm_Radius
+      layer.match(/oyuk(\d+)/i), // Oyuk30
       layer.match(/[_\s](\d+)[_\s]/i),
       layer.match(/^(\d+)/i), // Number at start
       layer.match(/(\d+)$/i)  // Number at end
     ]
 
-    for (const match of standaloneMatches) {
+    for (const match of enhancedMatches) {
       if (match) {
         const diameter = parseInt(match[1] || match[2])
         // Only accept reasonable tool diameters (1-50mm)
@@ -189,19 +253,23 @@ export class LayerToolDetector {
   }
 
   private extractAngle(layer: string): number | undefined {
-    // Look for V-bit angles like "AciliV90", "V45", "Oyuk45", etc.
+    // Enhanced V-bit angle detection patterns
     const angleMatches = [
-      layer.match(/(?:aciliv|v_?|oyuk)(\d+)/i),
-      layer.match(/(\d+)(?:deg|°)/i),
-      layer.match(/v(\d+)/i),
-      layer.match(/(\d+)v/i)
+      layer.match(/aciliv(\d+)/i), // K_AciliV90
+      layer.match(/v_?oyuk(\d+)/i), // V_Oyuk45
+      layer.match(/oyuk(\d+)/i), // Oyuk30
+      layer.match(/vgroove[_]?(\d+)(?:deg)?/i), // TOP_VGroove_90deg
+      layer.match(/^v(\d+)$/i), // V45, V120
+      layer.match(/(\d+)(?:deg|°)/i), // 90deg
+      layer.match(/v(\d+)/i), // General V pattern
+      layer.match(/(\d+)v/i) // Reverse V pattern
     ]
 
     for (const match of angleMatches) {
       if (match) {
         const angle = parseInt(match[1])
-        // Only accept reasonable V-bit angles (15-120 degrees)
-        if (angle >= 15 && angle <= 120) {
+        // Only accept reasonable V-bit angles (15-180 degrees)
+        if (angle >= 15 && angle <= 180) {
           return angle
         }
       }
@@ -403,6 +471,33 @@ export class LayerToolDetector {
 
     return nonMachinablePatterns.some(pattern =>
       upperLayer.includes(pattern)
+    )
+  }
+
+  /**
+   * Check if layer should be prohibited from tool detection based on user feedback
+   */
+  private isProhibitedLayer(layerName: string): boolean {
+    const prohibitedPatterns = [
+      'CLEANCORNERS', 'CLEANUP', 'DEEPEND', 'DEEPFRAME', 'THINFRAME',
+      'V120PENCERE', 'VIOLIN', '_TN_', 'V120', 'V45'
+    ]
+
+    return prohibitedPatterns.some(pattern =>
+      layerName.toUpperCase().includes(pattern.toUpperCase())
+    )
+  }
+
+  /**
+   * Check if layer is generic and should be prohibited
+   */
+  private isGenericLayer(layerName: string): boolean {
+    const genericPatterns = [
+      'K_AciliV', 'V_Oyuk', 'K_toolType', 'AciliV120'
+    ]
+
+    return genericPatterns.some(pattern =>
+      layerName === pattern
     )
   }
 

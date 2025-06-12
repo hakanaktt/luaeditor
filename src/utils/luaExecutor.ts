@@ -11,6 +11,7 @@ export interface DrawCommand {
   size: number
   text: string
   layer_name: string
+  thickness?: number
 }
 
 export interface LuaExecutionResult {

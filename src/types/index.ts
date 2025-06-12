@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+
 export interface FileItem {
   name: string
   path: string
@@ -256,4 +258,20 @@ export interface DrawCommand {
   size: number
   text: string
   layer_name: string
+  thickness?: number // Thickness/depth information for 3D operations
+}
+
+// Three.js tool geometry interfaces for CSG operations
+export interface ToolGeometry {
+  mesh: THREE.Mesh
+  tool: CNCTool
+  boundingBox: THREE.Box3
+}
+
+export interface CNCToolMesh {
+  cylindrical: (tool: CylindricalTool, height?: number) => THREE.Mesh
+  conical: (tool: ConicalTool, height?: number) => THREE.Mesh
+  ballnose: (tool: BallnoseTool, height?: number) => THREE.Mesh
+  radial: (tool: RadialTool, height?: number) => THREE.Mesh
+  special: (tool: SpecialTool, height?: number) => THREE.Mesh
 }

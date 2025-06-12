@@ -1,13 +1,15 @@
-import type { 
-  CNCTool, 
-  CylindricalTool, 
-  ConicalTool, 
-  BallnoseTool, 
-  RadialTool, 
+import type {
+  CNCTool,
+  CylindricalTool,
+  ConicalTool,
+  BallnoseTool,
+  RadialTool,
   SpecialTool,
   DoorMachiningProfile,
-  ToolOperation 
+  ToolOperation,
+  ToolGeometry
 } from '@/types'
+import * as THREE from 'three'
 
 export class CNCToolService {
   private static instance: CNCToolService
@@ -342,45 +344,137 @@ export class CNCToolService {
 
     const layer = layerName.toLowerCase()
 
-    // Pattern matching for different tool types based on layer naming conventions
+    // Check for prohibited layers first
+    if (this.isProhibitedLayer(layerName)) {
+      return null
+    }
 
-    // Cylindrical tools (Freze)
-    if (layer.includes('freze') || layer.includes('k_freze')) {
-      const diameterMatch = layer.match(/(\d+)mm/)
+    // Check for generic layers that should be prohibited
+    if (this.isGenericLayer(layerName)) {
+      return null
+    }
+
+    // Simple numeric patterns (20MM, 30MM, 5MM)
+    const simpleNumericMatch = layer.match(/^(\d+)mm$/i)
+    if (simpleNumericMatch) {
+      const diameter = parseInt(simpleNumericMatch[1])
+      return this.findToolByShapeAndDiameter('cylindrical', diameter)
+    }
+
+    // Cylindrical tools (Freze) - Enhanced patterns
+    if (layer.includes('freze') || layer.includes('k_freze') ||
+        layer.includes('roughing') || layer.includes('finishing')) {
+      const diameterMatch = layer.match(/(\d+)mm/) || layer.match(/freze(\d+)/) || layer.match(/(\d+)mmfreze/)
       const diameter = diameterMatch ? parseInt(diameterMatch[1]) : 6
       return this.findToolByShapeAndDiameter('cylindrical', diameter)
     }
 
-    // Ball nose tools (Ballnose)
-    if (layer.includes('ballnose') || layer.includes('k_ballnose') || layer.includes('baliksırti') || layer.includes('baliksırti')) {
-      const diameterMatch = layer.match(/(\d+)mm/)
+    // Ball nose tools (Ballnose) - Enhanced patterns
+    if (layer.includes('ballnose') || layer.includes('k_ballnose')) {
+      const diameterMatch = layer.match(/(\d+)mm/) || layer.match(/ballnose[_]?(\d+)/) || layer.match(/(\d+)/)
       const diameter = diameterMatch ? parseInt(diameterMatch[1]) : 6
       return this.findToolByShapeAndDiameter('ballnose', diameter)
     }
 
-    // Conical tools (V-bit, Acili)
-    if (layer.includes('aciliv') || layer.includes('k_aciliv') || layer.includes('v_oyuk')) {
-      const angleMatch = layer.match(/(\d+)/)
+    // Special ballnose variants (K_BalikSirti, K_Desen)
+    if (layer.includes('baliksırti') || layer.includes('baliksırti') ||
+        layer.includes('balıksırtı') || layer.includes('k_baliksırti')) {
+      const diameterMatch = layer.match(/(\d+)/)
+      const diameter = diameterMatch ? parseInt(diameterMatch[1]) : 6
+      return this.findToolByShapeAndDiameter('special', diameter) // Special tool as per feedback
+    }
+
+    if (layer.includes('k_desen') || layer.includes('desen')) {
+      const diameterMatch = layer.match(/(\d+)/)
+      const diameter = diameterMatch ? parseInt(diameterMatch[1]) : 3
+      return this.findToolByShapeAndDiameter('ballnose', diameter)
+    }
+
+    // Conical tools (V-bit, Acili) - Enhanced patterns
+    if (layer.includes('aciliv') && layer.match(/\d+/)) { // Only if has specific angle
+      const angleMatch = layer.match(/aciliv(\d+)/)
+      if (angleMatch) {
+        const angle = parseInt(angleMatch[1])
+        return this.findToolByShapeAndAngle('conical', angle)
+      }
+    }
+
+    if (layer.includes('vgroove') || layer.includes('v_oyuk45')) { // Specific V-groove patterns
+      const angleMatch = layer.match(/(\d+)deg/) || layer.match(/v_oyuk(\d+)/)
       const angle = angleMatch ? parseInt(angleMatch[1]) : 90
       return this.findToolByShapeAndAngle('conical', angle)
     }
 
     // Special operations
-    if (layer.includes('cep_acma') || layer.includes('pocket')) {
-      return this.findToolByShapeAndDiameter('cylindrical', 10) // Default to 10mm for pocketing
+    if (layer.includes('cep_acma') || layer.includes('cep') || layer.includes('pocket')) {
+      return this.findToolByShapeAndDiameter('cylindrical', 10)
     }
 
-    if (layer.includes('desen') || layer.includes('pattern')) {
-      return this.findToolByShapeAndDiameter('ballnose', 3) // Small ball end mill for patterns
-    }
-
-    // Panel operations (general machining)
+    // Panel operations
     if (layer.includes('panel')) {
       return this.findToolByShapeAndDiameter('cylindrical', 6)
     }
 
+    // Kanal operations
+    if (layer.includes('k_kanal') || layer.includes('kanal')) {
+      return this.findToolByShapeAndDiameter('cylindrical', 6)
+    }
+
+    // Form tools and special operations
+    if (layer.includes('form') || layer.includes('k_form') || layer.includes('jnotch')) {
+      return this.findToolByShapeAndDiameter('special', 6)
+    }
+
+    // Line/drawing operations
+    if (layer.includes('cizgi') || layer.includes('line')) {
+      return this.findToolByShapeAndDiameter('cylindrical', 3)
+    }
+
+    // Edge profiling - corrected radius interpretation
+    if (layer.includes('edge') && layer.includes('radius')) {
+      const radiusMatch = layer.match(/(\d+)mm/)
+      const radius = radiusMatch ? parseInt(radiusMatch[1]) : 2
+      return this.findToolByShapeAndDiameter('radial', radius) // Use radius directly as per feedback
+    }
+
+    // Oyuk30 special case - should be cylindrical for pocketing
+    if (layer.includes('oyuk') && layer.match(/\d+/)) {
+      const diameterMatch = layer.match(/(\d+)/)
+      const diameter = diameterMatch ? parseInt(diameterMatch[1]) : 30
+      return this.findToolByShapeAndDiameter('cylindrical', diameter)
+    }
+
+    // Dovetail special case
+    if (layer.includes('dovetail')) {
+      return this.findToolByShapeAndDiameter('special', 10)
+    }
+
     // Default fallback
     return this.findToolByShapeAndDiameter('cylindrical', 6)
+  }
+
+  // Check if layer should be prohibited from tool detection
+  private isProhibitedLayer(layerName: string): boolean {
+    const prohibitedPatterns = [
+      'CLEANCORNERS', 'CLEANUP', 'DEEPEND', 'DEEPFRAME', 'THINFRAME',
+      'V120PENCERE', 'VIOLIN', '_TN_', 'V120', 'V45'
+    ]
+
+    return prohibitedPatterns.some(pattern =>
+      layerName.toUpperCase().includes(pattern.toUpperCase())
+    )
+  }
+
+  // Check if layer is generic and should be prohibited
+  private isGenericLayer(layerName: string): boolean {
+    const genericPatterns = [
+      'K_AciliV', 'V_Oyuk', 'K_toolType', 'AciliV120'
+    ]
+
+    // Generic layers are those without specific parameters
+    return genericPatterns.some(pattern =>
+      layerName === pattern
+    )
   }
 
   private findToolByShapeAndDiameter(shape: string, diameter: number): CNCTool | null {
@@ -396,9 +490,9 @@ export class CNCToolService {
       const closestDiff = Math.abs(closest.diameter - diameter)
       const currentDiff = Math.abs(current.diameter - diameter)
       return currentDiff < closestDiff ? current : closest
-    }, null as CNCTool | null)
+    }, undefined as CNCTool | undefined)
 
-    return tool
+    return tool || null
   }
 
   private findToolByShapeAndAngle(shape: string, angle: number): CNCTool | null {
@@ -421,9 +515,9 @@ export class CNCToolService {
       const currentDiff = Math.abs(currentAngle - angle)
 
       return currentDiff < closestDiff ? current : closest
-    }, null as CNCTool | null)
+    }, undefined as CNCTool | undefined)
 
-    return tool
+    return tool || null
   }
 
   // Get tool information from layer name with detailed analysis
@@ -475,6 +569,208 @@ export class CNCToolService {
       surface,
       parameters
     }
+  }
+
+  // Three.js tool geometry generation methods for CSG operations
+  public createToolGeometry(tool: CNCTool, height: number = 50): ToolGeometry {
+    let mesh: THREE.Mesh
+
+    switch (tool.shape) {
+      case 'cylindrical':
+        mesh = this.createCylindricalToolMesh(tool as CylindricalTool, height)
+        break
+      case 'conical':
+        mesh = this.createConicalToolMesh(tool as ConicalTool, height)
+        break
+      case 'ballnose':
+        mesh = this.createBallnoseToolMesh(tool as BallnoseTool, height)
+        break
+      case 'radial':
+        mesh = this.createRadialToolMesh(tool as RadialTool, height)
+        break
+      case 'special':
+        mesh = this.createSpecialToolMesh(tool as SpecialTool, height)
+        break
+      default:
+        mesh = this.createCylindricalToolMesh(tool as CylindricalTool, height)
+    }
+
+    const boundingBox = new THREE.Box3().setFromObject(mesh)
+
+    return {
+      mesh,
+      tool,
+      boundingBox
+    }
+  }
+
+  private createCylindricalToolMesh(tool: CylindricalTool, height: number): THREE.Mesh {
+    const radius = tool.diameter / 2
+    const geometry = new THREE.CylinderGeometry(radius, radius, height, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x888888,
+      transparent: true,
+      opacity: 0.7
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'cylindrical' }
+    return mesh
+  }
+
+  private createConicalToolMesh(tool: ConicalTool, height: number): THREE.Mesh {
+    const topRadius = tool.diameter / 2
+    const tipRadius = (tool.tipDiameter || 0.1) / 2
+    const geometry = new THREE.CylinderGeometry(tipRadius, topRadius, height, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x666666,
+      transparent: true,
+      opacity: 0.7
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'conical' }
+    return mesh
+  }
+
+  private createBallnoseToolMesh(tool: BallnoseTool, height: number): THREE.Mesh {
+    const radius = tool.diameter / 2
+    const ballRadius = tool.ballRadius
+
+    // Create cylinder for shaft
+    const cylinderGeometry = new THREE.CylinderGeometry(radius, radius, height - ballRadius, 32)
+    const cylinderMaterial = new THREE.MeshLambertMaterial({
+      color: 0x999999,
+      transparent: true,
+      opacity: 0.7
+    })
+    const cylinderMesh = new THREE.Mesh(cylinderGeometry, cylinderMaterial)
+    cylinderMesh.position.y = ballRadius / 2
+
+    // Create sphere for ball end
+    const sphereGeometry = new THREE.SphereGeometry(ballRadius, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2)
+    const sphereMaterial = new THREE.MeshLambertMaterial({
+      color: 0x999999,
+      transparent: true,
+      opacity: 0.7
+    })
+    const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial)
+    sphereMesh.position.y = -(height - ballRadius) / 2
+
+    // Combine into group
+    const group = new THREE.Group()
+    group.add(cylinderMesh)
+    group.add(sphereMesh)
+
+    // Convert group to mesh for consistency
+    const combinedGeometry = new THREE.BufferGeometry()
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x999999,
+      transparent: true,
+      opacity: 0.7
+    })
+
+    const mesh = new THREE.Mesh(combinedGeometry, material)
+    mesh.userData = { tool, toolType: 'ballnose' }
+    return mesh
+  }
+
+  private createRadialToolMesh(tool: RadialTool, height: number): THREE.Mesh {
+    const radius = tool.diameter / 2
+    const cornerRadius = tool.cornerRadius
+
+    // Simplified as cylinder with rounded edges (complex geometry would need custom shape)
+    const geometry = new THREE.CylinderGeometry(radius - cornerRadius, radius, height, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x777777,
+      transparent: true,
+      opacity: 0.7
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'radial' }
+    return mesh
+  }
+
+  private createSpecialToolMesh(tool: SpecialTool, height: number): THREE.Mesh {
+    // Default to cylindrical shape for special tools
+    const radius = tool.diameter / 2
+    const geometry = new THREE.CylinderGeometry(radius, radius, height, 32)
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x555555,
+      transparent: true,
+      opacity: 0.7
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.userData = { tool, toolType: 'special' }
+    return mesh
+  }
+
+  // Create tool path geometry from draw commands
+  public createToolPathFromCommands(commands: any[], tool: CNCTool, thickness: number = 5): THREE.Mesh[] {
+    const meshes: THREE.Mesh[] = []
+    const toolGeometry = this.createToolGeometry(tool, thickness)
+
+    commands.forEach((command, index) => {
+      if (command.command_type === 'line' || command.command_type === 'rectangle' || command.command_type === 'circle') {
+        const toolMesh = toolGeometry.mesh.clone()
+
+        // Position tool based on command coordinates
+        if (command.command_type === 'line') {
+          const midX = (command.x1 + command.x2) / 2
+          const midY = (command.y1 + command.y2) / 2
+          toolMesh.position.set(midX, 0, midY)
+        } else if (command.command_type === 'rectangle') {
+          const centerX = (command.x1 + command.x2) / 2
+          const centerY = (command.y1 + command.y2) / 2
+          toolMesh.position.set(centerX, 0, centerY)
+        } else if (command.command_type === 'circle') {
+          toolMesh.position.set(command.x1, 0, command.y1)
+        }
+
+        // Set depth based on thickness or command thickness
+        const depth = command.thickness || thickness
+        toolMesh.position.y = -depth / 2
+
+        toolMesh.userData = {
+          command,
+          tool,
+          index,
+          operation: 'subtract' // Default to subtraction for CNC operations
+        }
+
+        meshes.push(toolMesh)
+      }
+    })
+
+    return meshes
+  }
+
+  // Test method to verify tool geometry creation
+  public testToolCreation(): void {
+    console.log('Testing CNC tool geometry creation...')
+
+    const testTools = [
+      this.getToolById('cyl-6mm'),
+      this.getToolById('con-90deg'),
+      this.getToolById('ball-6mm')
+    ]
+
+    testTools.forEach(tool => {
+      if (tool) {
+        try {
+          const geometry = this.createToolGeometry(tool, 10)
+          console.log(`✓ Successfully created geometry for ${tool.name}:`, {
+            toolType: tool.shape,
+            diameter: tool.diameter,
+            boundingBox: geometry.boundingBox
+          })
+        } catch (error) {
+          console.error(`✗ Failed to create geometry for ${tool.name}:`, error)
+        }
+      }
+    })
   }
 }
 
