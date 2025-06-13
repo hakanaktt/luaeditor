@@ -1029,17 +1029,26 @@ export class CNCToolService {
       if (command.command_type === 'line' || command.command_type === 'rectangle' || command.command_type === 'circle') {
         const toolMesh = toolGeometry.mesh.clone()
 
-        // Position tool based on command coordinates
+        // Position tool based on command coordinates (use 3D converted coordinates if available)
         if (command.command_type === 'line') {
-          const midX = (command.x1 + command.x2) / 2
-          const midY = (command.y1 + command.y2) / 2
-          toolMesh.position.set(midX, 0, midY)
+          const midX = command.x1_3d !== undefined ? (command.x1_3d + command.x2_3d) / 2 : (command.x1 + command.x2) / 2
+          const midY = command.y1_3d !== undefined ? (command.y1_3d + command.y2_3d) / 2 : (command.y1 + command.y2) / 2
+          // Position on the door surface (Y=0 for center, adjust for surface contact)
+          const surfaceY = command.isBottomFace ? -thickness/2 : thickness/2  // Position on door surface
+          toolMesh.position.set(midX, surfaceY, midY)
+          console.log(`🔧 Positioned line tool at (${midX.toFixed(1)}, ${surfaceY}, ${midY.toFixed(1)}) - ${command.isBottomFace ? 'Bottom' : 'Top'} face`)
         } else if (command.command_type === 'rectangle') {
-          const centerX = (command.x1 + command.x2) / 2
-          const centerY = (command.y1 + command.y2) / 2
-          toolMesh.position.set(centerX, 0, centerY)
+          const centerX = command.x1_3d !== undefined ? (command.x1_3d + command.x2_3d) / 2 : (command.x1 + command.x2) / 2
+          const centerY = command.y1_3d !== undefined ? (command.y1_3d + command.y2_3d) / 2 : (command.y1 + command.y2) / 2
+          const surfaceY = command.isBottomFace ? -thickness/2 : thickness/2
+          toolMesh.position.set(centerX, surfaceY, centerY)
+          console.log(`🔧 Positioned rectangle tool at (${centerX.toFixed(1)}, ${surfaceY}, ${centerY.toFixed(1)}) - ${command.isBottomFace ? 'Bottom' : 'Top'} face`)
         } else if (command.command_type === 'circle') {
-          toolMesh.position.set(command.x1, 0, command.y1)
+          const centerX = command.x1_3d !== undefined ? command.x1_3d : command.x1
+          const centerY = command.y1_3d !== undefined ? command.y1_3d : command.y1
+          const surfaceY = command.isBottomFace ? -thickness/2 : thickness/2
+          toolMesh.position.set(centerX, surfaceY, centerY)
+          console.log(`🔧 Positioned circle tool at (${centerX.toFixed(1)}, ${surfaceY}, ${centerY.toFixed(1)}) - ${command.isBottomFace ? 'Bottom' : 'Top'} face`)
         }
 
         // Set depth based on thickness or command thickness
@@ -1102,8 +1111,14 @@ export class CNCToolService {
 
   // Create tool mesh for line operations
   private createLineToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
-    const startPoint = new THREE.Vector3(command.x1, 0, command.y1)
-    const endPoint = new THREE.Vector3(command.x2, 0, command.y2)
+    // Use 3D coordinates if available, otherwise fall back to 2D
+    const x1 = command.x1_3d !== undefined ? command.x1_3d : command.x1
+    const y1 = command.y1_3d !== undefined ? command.y1_3d : command.y1
+    const x2 = command.x2_3d !== undefined ? command.x2_3d : command.x2
+    const y2 = command.y2_3d !== undefined ? command.y2_3d : command.y2
+
+    const startPoint = new THREE.Vector3(x1, 0, y1)
+    const endPoint = new THREE.Vector3(x2, 0, y2)
     const path = [startPoint, endPoint]
 
     // For line operations, create a swept tool mesh
@@ -1113,9 +1128,11 @@ export class CNCToolService {
 
     // For other operations, use CSG tool mesh positioned at line center
     const toolMesh = this.createCSGToolMesh(tool, operation, depth)
-    const midX = (command.x1 + command.x2) / 2
-    const midY = (command.y1 + command.y2) / 2
-    toolMesh.position.set(midX, -depth / 2, midY)
+    const midX = (x1 + x2) / 2
+    const midZ = (y1 + y2) / 2
+    // Position tool to intersect with door surface (door is at Y = -9, surface at Y = 0)
+    const surfaceY = command.isBottomFace ? -depth / 2 - 9 : -depth / 2
+    toolMesh.position.set(midX, surfaceY, midZ)
 
     // Rotate tool to align with line direction
     const direction = endPoint.clone().sub(startPoint).normalize()
@@ -1127,42 +1144,53 @@ export class CNCToolService {
 
   // Create tool mesh for rectangle operations
   private createRectangleToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
-    const centerX = (command.x1 + command.x2) / 2
-    const centerY = (command.y1 + command.y2) / 2
-    const width = Math.abs(command.x2 - command.x1)
-    const height = Math.abs(command.y2 - command.y1)
+    // Use 3D coordinates if available, otherwise fall back to 2D
+    const x1 = command.x1_3d !== undefined ? command.x1_3d : command.x1
+    const y1 = command.y1_3d !== undefined ? command.y1_3d : command.y1
+    const x2 = command.x2_3d !== undefined ? command.x2_3d : command.x2
+    const y2 = command.y2_3d !== undefined ? command.y2_3d : command.y2
+
+    const centerX = (x1 + x2) / 2
+    const centerZ = (y1 + y2) / 2
+    const width = Math.abs(x2 - x1)
+    const height = Math.abs(y2 - y1)
 
     if (operation === 'pocketing') {
       // For pocketing, create a mesh that covers the entire rectangle
-      return this.createPocketingMesh(tool, width, height, depth, centerX, centerY)
+      return this.createPocketingMesh(tool, width, height, depth, centerX, centerZ)
     }
 
     // For other operations, use standard tool mesh
     const toolMesh = this.createCSGToolMesh(tool, operation, depth)
-    toolMesh.position.set(centerX, -depth / 2, centerY)
+    // Position tool to intersect with door surface (door is at Y = -9, surface at Y = 0)
+    const surfaceY = command.isBottomFace ? -depth / 2 - 9 : -depth / 2
+    toolMesh.position.set(centerX, surfaceY, centerZ)
     return toolMesh
   }
 
   // Create tool mesh for circle operations
   private createCircleToolMesh(command: any, tool: CNCTool, operation: string, depth: number): THREE.Mesh {
-    const centerX = command.x1
-    const centerY = command.y1
+    // Use 3D coordinates if available, otherwise fall back to 2D
+    const centerX = command.x1_3d !== undefined ? command.x1_3d : command.x1
+    const centerZ = command.y1_3d !== undefined ? command.y1_3d : command.y1
     const radius = command.radius
 
     if (operation === 'drilling') {
       // For drilling, create a cylindrical mesh at the circle center
       const drillMesh = this.createCSGToolMesh(tool, operation, depth)
-      drillMesh.position.set(centerX, -depth / 2, centerY)
+      // Position tool to intersect with door surface (door is at Y = -9, surface at Y = 0)
+      const surfaceY = command.isBottomFace ? -depth / 2 - 9 : -depth / 2
+      drillMesh.position.set(centerX, surfaceY, centerZ)
       return drillMesh
     }
 
     if (operation === 'pocketing') {
       // For circular pocketing, create a cylindrical pocket
-      return this.createCircularPocketMesh(tool, radius, depth, centerX, centerY)
+      return this.createCircularPocketMesh(tool, radius, depth, centerX, centerZ)
     }
 
     // For profiling, create a torus-like mesh following the circle
-    return this.createCircularProfileMesh(tool, radius, depth, centerX, centerY)
+    return this.createCircularProfileMesh(tool, radius, depth, centerX, centerZ)
   }
 
   // Create tool mesh for arc operations
@@ -1185,7 +1213,7 @@ export class CNCToolService {
   }
 
   // Create pocketing mesh for rectangular areas
-  private createPocketingMesh(tool: CNCTool, width: number, height: number, depth: number, centerX: number, centerY: number): THREE.Mesh {
+  private createPocketingMesh(tool: CNCTool, width: number, height: number, depth: number, centerX: number, centerZ: number): THREE.Mesh {
     // Create a box geometry that represents the material to be removed
     const geometry = new THREE.BoxGeometry(width, depth, height)
     const material = new THREE.MeshLambertMaterial({
@@ -1196,13 +1224,13 @@ export class CNCToolService {
     })
 
     const mesh = new THREE.Mesh(geometry, material)
-    mesh.position.set(centerX, -depth / 2, centerY)
+    mesh.position.set(centerX, -depth / 2, centerZ)
     mesh.userData = { tool, toolType: 'pocketing', isCSGTool: true }
     return mesh
   }
 
   // Create circular pocket mesh
-  private createCircularPocketMesh(tool: CNCTool, radius: number, depth: number, centerX: number, centerY: number): THREE.Mesh {
+  private createCircularPocketMesh(tool: CNCTool, radius: number, depth: number, centerX: number, centerZ: number): THREE.Mesh {
     const geometry = new THREE.CylinderGeometry(radius, radius, depth, 32)
     const material = new THREE.MeshLambertMaterial({
       color: this.getToolColor(tool.shape),
@@ -1212,13 +1240,13 @@ export class CNCToolService {
     })
 
     const mesh = new THREE.Mesh(geometry, material)
-    mesh.position.set(centerX, -depth / 2, centerY)
+    mesh.position.set(centerX, -depth / 2, centerZ)
     mesh.userData = { tool, toolType: 'circular-pocket', isCSGTool: true }
     return mesh
   }
 
   // Create circular profile mesh (torus-like for profiling operations)
-  private createCircularProfileMesh(tool: CNCTool, radius: number, depth: number, centerX: number, centerY: number): THREE.Mesh {
+  private createCircularProfileMesh(tool: CNCTool, radius: number, depth: number, centerX: number, centerZ: number): THREE.Mesh {
     const toolRadius = tool.diameter / 2
     const geometry = new THREE.TorusGeometry(radius, toolRadius, 8, 32)
     const material = new THREE.MeshLambertMaterial({
@@ -1229,7 +1257,7 @@ export class CNCToolService {
     })
 
     const mesh = new THREE.Mesh(geometry, material)
-    mesh.position.set(centerX, -depth / 2, centerY)
+    mesh.position.set(centerX, -depth / 2, centerZ)
     mesh.rotation.x = Math.PI / 2 // Rotate to lie flat
     mesh.userData = { tool, toolType: 'circular-profile', isCSGTool: true }
     return mesh
@@ -1463,6 +1491,60 @@ export class CNCToolService {
     }
 
     console.log('CSG tool mesh creation test completed.')
+  }
+
+  // Create realistic toolpath for CSG testing
+  public createTestToolpath(): any[] {
+    return [
+      // Drilling operations
+      { command_type: 'circle', x1: 50, y1: 50, x2: 0, y2: 0, radius: 3, color: '#ff0000', size: 1, text: '', layer_name: 'drilling_6mm', thickness: 10 },
+      { command_type: 'circle', x1: 150, y1: 50, x2: 0, y2: 0, radius: 3, color: '#ff0000', size: 1, text: '', layer_name: 'drilling_6mm', thickness: 10 },
+
+      // Roughing operations
+      { command_type: 'rectangle', x1: 20, y1: 20, x2: 80, y2: 80, radius: 0, color: '#00ff00', size: 1, text: '', layer_name: 'roughing_8mm', thickness: 5 },
+      { command_type: 'rectangle', x1: 120, y1: 20, x2: 180, y2: 80, radius: 0, color: '#00ff00', size: 1, text: '', layer_name: 'roughing_8mm', thickness: 5 },
+
+      // Pocketing operations
+      { command_type: 'rectangle', x1: 30, y1: 30, x2: 70, y2: 70, radius: 0, color: '#0000ff', size: 1, text: '', layer_name: 'pocketing_6mm', thickness: 8 },
+
+      // Profiling operations
+      { command_type: 'line', x1: 10, y1: 10, x2: 190, y2: 10, radius: 0, color: '#ff00ff', size: 1, text: '', layer_name: 'profiling_4mm', thickness: 3 },
+      { command_type: 'line', x1: 10, y1: 90, x2: 190, y2: 90, radius: 0, color: '#ff00ff', size: 1, text: '', layer_name: 'profiling_4mm', thickness: 3 },
+
+      // Finishing operations
+      { command_type: 'circle', x1: 100, y1: 50, x2: 0, y2: 0, radius: 15, color: '#ffff00', size: 1, text: '', layer_name: 'finishing_2mm', thickness: 1 }
+    ]
+  }
+
+  // Get appropriate tool for layer
+  public getToolForLayer(layerName: string): CNCTool | null {
+    const layer = layerName.toLowerCase()
+
+    // Extract diameter from layer name
+    const diameterMatch = layer.match(/(\d+)mm/)
+    if (diameterMatch) {
+      const diameter = parseInt(diameterMatch[1])
+      return this.getToolById(`cyl-${diameter}mm`) || this.getToolById('cyl-6mm') || null
+    }
+
+    // Default tools based on operation type
+    if (layer.includes('drilling') || layer.includes('delme')) {
+      return this.getToolById('cyl-6mm') || null
+    }
+    if (layer.includes('roughing') || layer.includes('kaba')) {
+      return this.getToolById('cyl-8mm') || null
+    }
+    if (layer.includes('finishing') || layer.includes('son')) {
+      return this.getToolById('cyl-2mm') || this.getToolById('ball-2mm') || null
+    }
+    if (layer.includes('profiling') || layer.includes('profil')) {
+      return this.getToolById('cyl-4mm') || null
+    }
+    if (layer.includes('pocketing') || layer.includes('cep')) {
+      return this.getToolById('cyl-6mm') || null
+    }
+
+    return this.getToolById('cyl-6mm') || null // Default tool
   }
 }
 

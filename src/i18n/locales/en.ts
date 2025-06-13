@@ -480,6 +480,7 @@ export default {
     cuttingParameters: 'Recommended Cutting Parameters',
     topSurface: 'Top',
     bottomSurface: 'Bottom',
+    noneSurface: 'None',
     contourType: 'Contour Type',
     inner: 'Inner',
     outer: 'Outer',

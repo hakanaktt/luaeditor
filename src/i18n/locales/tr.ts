@@ -482,6 +482,7 @@ export default {
     cuttingParameters: 'Önerilen Kesme Parametreleri',
     topSurface: 'Üst',
     bottomSurface: 'Alt',
+    noneSurface: 'Yok',
     contourType: 'Kontur Tipi',
     inner: 'İç',
     outer: 'Dış',

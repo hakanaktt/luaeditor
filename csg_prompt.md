@@ -39,7 +39,7 @@ Bu komutlar önceden işlenmiş veya JSON formatında TypeScript'e ulaştırıla
 
 ### 2. TypeScript CSG Mesh Üretimi
 
-* Kullanılacak kütüphaneler: `three.js`, `three-csg-ts`.
+* Kullanılacak kütüphaneler: `three.js`, `three-bvh-csg`.
 * JSON CSG direktifleri ile mesh üretilecek:
 
   * Primitives: `cube`, `cylinder`, `sphere`, `circle + extrude`.
@@ -127,6 +127,6 @@ fn save_stl(data: String) -> Result<(), String> {
 ## 🔍 Ek İpuçları (AI için)
 
 * Extrude işlemleri için `THREE.Shape()` + `ExtrudeGeometry` kullan.
-* CSG boolean işlemler için `three-csg-ts` kullan.
+* CSG boolean işlemler için `three-bvh-csg` kullan.
 * Transformasyonlar (translate, rotate, scale) Three.js `Object3D` API ile uygulanmalı.
 * Rust tarafı binary STL export gerekirse güncellenebilir (`stl_io::create_stl`).

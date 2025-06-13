@@ -131,6 +131,14 @@ const drawCanvas = () => {
         drawCanvas()
       } else {
         console.log('Canvas ref still not available after retry')
+        // Try one more time after a longer delay
+        setTimeout(() => {
+          if (canvasRef.value) {
+            drawCanvas()
+          } else {
+            console.warn('Canvas ref permanently unavailable - component may not be mounted')
+          }
+        }, 500)
       }
     }, 100)
     return

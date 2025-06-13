@@ -167,7 +167,7 @@ The tool meshes created by this system are designed to work seamlessly with the 
 
 1. **Material Subtraction**: Tool meshes can be subtracted from workpiece geometry
 2. **Boolean Operations**: Support for union, subtract, and intersect operations
-3. **Three.js Compatibility**: All meshes are compatible with three-csg-ts library
+3. **Three.js Compatibility**: All meshes are compatible with three-bvh-csg library
 4. **Proper Normals**: Meshes have correct normals for CSG operations
 
 ## Performance Considerations

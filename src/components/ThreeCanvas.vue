@@ -30,6 +30,25 @@
           <Scissors :size="14" />
         </button>
         <div class="separator"></div>
+        <!-- CSG Apply Button -->
+        <button
+          @click="applyCSGOperations"
+          class="p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-700 hover:text-blue-900 font-medium border border-blue-300"
+          title="Apply CSG Operations - Subtract tools from door"
+        >
+          <Zap :size="16" />
+          <span class="ml-1 text-xs">CSG</span>
+        </button>
+        <!-- Advanced Toolpath CSG Button -->
+        <button
+          @click="applyToolpathCSG"
+          class="p-2 bg-green-100 hover:bg-green-200 rounded text-green-700 hover:text-green-900 font-medium border border-green-300"
+          title="Advanced Toolpath CSG - Progressive material removal"
+        >
+          <CornerDownRight :size="16" />
+          <span class="ml-1 text-xs">Advanced</span>
+        </button>
+
         <!-- View Controls -->
         <button
           @click="resetCamera"
@@ -135,7 +154,7 @@
           <div class="tool-layer-info">
             <div class="layer-name">{{ toolLayer.layerName }}</div>
             <div v-if="toolLayer.analysis.tool" class="tool-info">
-              <component :is="getToolIcon(toolLayer.analysis.tool.shape)" :size="12" />
+              <component :is="getToolIcon(toolLayer.analysis.tool.shape || 'cylindrical')" :size="12" />
               <span class="tool-name">{{ toolLayer.analysis.tool.name }}</span>
               <span class="tool-diameter">⌀{{ toolLayer.analysis.tool.diameter }}mm</span>
             </div>
@@ -155,7 +174,7 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { Plus, Minus, Scissors, RotateCcw, Grid3x3, X, Maximize2, Square, Circle, Triangle, Zap, CornerDownRight, Star } from 'lucide-vue-next'
 import * as THREE from 'three'
-import { CSG } from 'three-csg-ts'
+import { SUBTRACTION, ADDITION, INTERSECTION, Brush, Evaluator } from 'three-bvh-csg'
 import { OrbitControls } from '../utils/OrbitControls'
 import { layerToolDetector } from '@/services/layerToolDetector'
 import type { LayerAnalysis } from '@/services/layerToolDetector'
@@ -208,10 +227,325 @@ let renderer: THREE.WebGLRenderer
 let controls: OrbitControls
 let animationId: number
 
-// Door dimensions from TurtleCanvas.vue
+// CSG evaluator instance
+const csgEvaluator = new Evaluator()
+
+// Test CSG functionality
+const testCSGOperations = () => {
+  console.log('Testing three-bvh-csg functionality...')
+
+  try {
+    // Create two simple test geometries
+    const boxGeometry = new THREE.BoxGeometry(2, 2, 2)
+    const sphereGeometry = new THREE.SphereGeometry(1.5, 16, 16)
+
+    // Create brushes
+    const boxBrush = new Brush(boxGeometry)
+    boxBrush.updateMatrixWorld()
+
+    const sphereBrush = new Brush(sphereGeometry)
+    sphereBrush.position.set(1, 0, 0)
+    sphereBrush.updateMatrixWorld()
+
+    // Test subtraction operation
+    const result = csgEvaluator.evaluate(boxBrush, sphereBrush, SUBTRACTION)
+
+    console.log('✅ CSG test successful! Result geometry:', {
+      vertices: result.geometry.attributes.position.count,
+      faces: result.geometry.index ? result.geometry.index.count / 3 : 0
+    })
+
+    return true
+  } catch (error) {
+    console.error('❌ CSG test failed:', error)
+    return false
+  }
+}
+
+// Group tool objects by layer for organized processing
+const groupToolObjectsByLayer = (): Map<string, THREE.Mesh[]> => {
+  const toolObjectsByLayer = new Map<string, THREE.Mesh[]>()
+
+  const toolObjects = scene.children.filter(child => child.userData?.isToolObject) as THREE.Mesh[]
+  console.log(`🔍 Found ${toolObjects.length} tool objects in scene (total children: ${scene.children.length})`)
+
+  toolObjects.forEach((toolMesh, index) => {
+    const layerName = toolMesh.userData.layerName || 'unknown'
+    console.log(`  Tool ${index + 1}: layer="${layerName}", position=(${toolMesh.position.x.toFixed(1)}, ${toolMesh.position.y.toFixed(1)}, ${toolMesh.position.z.toFixed(1)})`)
+
+    if (!toolObjectsByLayer.has(layerName)) {
+      toolObjectsByLayer.set(layerName, [])
+    }
+    toolObjectsByLayer.get(layerName)!.push(toolMesh)
+  })
+
+  console.log(`📊 Grouped into ${toolObjectsByLayer.size} layers:`, Array.from(toolObjectsByLayer.keys()))
+
+  return toolObjectsByLayer
+}
+
+// Determine the appropriate CSG operation for a layer
+const getOperationForLayer = (layerName: string, defaultOperation: string = 'subtract'): 'union' | 'subtract' | 'intersect' => {
+  const lowerLayer = layerName.toLowerCase()
+
+  // Bottom face operations (SF suffix) are typically additive
+  if (lowerLayer.includes('sf')) {
+    return 'union'
+  }
+
+  // Most CNC operations are subtractive
+  if (lowerLayer.includes('roughing') ||
+      lowerLayer.includes('finishing') ||
+      lowerLayer.includes('drilling') ||
+      lowerLayer.includes('pocketing') ||
+      lowerLayer.includes('profiling')) {
+    return 'subtract'
+  }
+
+  // Use provided operation or default to subtract
+  return (defaultOperation as 'union' | 'subtract' | 'intersect') || 'subtract'
+}
+
+// Enhanced operation detection with more specific patterns
+const detectOperationFromLayer = (layerName: string): string => {
+  const lowerLayer = layerName.toLowerCase()
+
+  // ADekoLib specific patterns (Turkish CNC software)
+  if (lowerLayer.includes('cep_acma') || lowerLayer.includes('cep')) {
+    return 'pocketing'
+  }
+  if (lowerLayer.includes('freze') && lowerLayer.includes('dis')) {
+    return 'profiling' // External milling
+  }
+  if (lowerLayer.includes('freze') && lowerLayer.includes('ic')) {
+    return 'pocketing' // Internal milling
+  }
+  if (lowerLayer.includes('aciliv') || lowerLayer.includes('v')) {
+    return 'profiling' // V-groove operations
+  }
+  if (lowerLayer.includes('freze')) {
+    return 'roughing' // General milling
+  }
+  if (lowerLayer.includes('panel')) {
+    return 'roughing' // Panel cutting
+  }
+
+  // Standard patterns
+  if (lowerLayer.includes('kaba') || lowerLayer.includes('roughing')) {
+    return 'roughing'
+  }
+  if (lowerLayer.includes('son') || lowerLayer.includes('finishing')) {
+    return 'finishing'
+  }
+  if (lowerLayer.includes('pocket')) {
+    return 'pocketing'
+  }
+  if (lowerLayer.includes('delme') || lowerLayer.includes('drilling') || lowerLayer.includes('drill')) {
+    return 'drilling'
+  }
+  if (lowerLayer.includes('profil') || lowerLayer.includes('profile') || lowerLayer.includes('profiling')) {
+    return 'profiling'
+  }
+
+  // Default based on common patterns
+  if (lowerLayer.includes('hole') || lowerLayer.includes('delik')) {
+    return 'drilling'
+  }
+  if (lowerLayer.includes('groove') || lowerLayer.includes('oluk')) {
+    return 'profiling'
+  }
+  if (lowerLayer.includes('frame') || lowerLayer.includes('cerceve')) {
+    return 'profiling'
+  }
+
+  return 'roughing' // Default operation
+}
+
+// Apply toolpath-specific CSG operations with progress tracking
+const applyToolpathCSG = async () => {
+  console.log('🚀 Starting advanced toolpath CSG processing...')
+
+  const baseLayer = operationLayers.value.find(l => l.id === 'base')
+  if (!baseLayer || !baseLayer.mesh) {
+    console.error('❌ No base mesh found for toolpath CSG operations')
+    return
+  }
+
+  const toolObjectsByLayer = groupToolObjectsByLayer()
+  console.log(`📊 Found ${toolObjectsByLayer.size} layers with tool objects`)
+
+  if (toolObjectsByLayer.size === 0) {
+    console.warn('⚠️ No tool objects found for CSG operations')
+    console.log('🔧 Creating tool objects from draw commands first...')
+    createToolObjects()
+
+    // Try again after creating tool objects
+    const newToolObjectsByLayer = groupToolObjectsByLayer()
+    console.log(`📊 After creation: Found ${newToolObjectsByLayer.size} layers with tool objects`)
+
+    if (newToolObjectsByLayer.size === 0) {
+      console.warn('⚠️ Still no tool objects found after creation attempt')
+      return
+    }
+    console.log(`✅ Created tool objects for ${newToolObjectsByLayer.size} layers`)
+  }
+
+  let workpiece = baseLayer.mesh.clone()
+  let totalOperations = 0
+  let successfulOperations = 0
+
+  // Count total operations
+  toolObjectsByLayer.forEach(toolObjects => {
+    totalOperations += toolObjects.length
+  })
+
+  console.log(`📊 Processing ${totalOperations} operations across ${toolObjectsByLayer.size} layers`)
+
+  // Process operations in realistic machining order
+  const processingOrder = [
+    { type: 'drilling', priority: 1 },
+    { type: 'roughing', priority: 2 },
+    { type: 'pocketing', priority: 3 },
+    { type: 'profiling', priority: 4 },
+    { type: 'finishing', priority: 5 }
+  ]
+
+  for (const { type: operationType } of processingOrder) {
+    for (const [layerName, toolObjects] of toolObjectsByLayer) {
+      const layerOperation = detectOperationFromLayer(layerName)
+
+      if (layerOperation === operationType) {
+        console.log(`🔧 Processing ${layerName} (${operationType}) - ${toolObjects.length} operations`)
+
+        for (let i = 0; i < toolObjects.length; i++) {
+          const toolMesh = toolObjects[i]
+          const operation = getOperationForLayer(layerName, toolMesh.userData.operation)
+
+          console.log(`  ⚙️ ${successfulOperations + 1}/${totalOperations}: ${operation} with ${toolMesh.userData.tool?.name || 'unknown tool'}`)
+
+          try {
+            const result = performCSGOperation(workpiece, toolMesh, operation)
+            if (result) {
+              // Remove old workpiece from scene if it's not the original
+              if (workpiece !== baseLayer.mesh) {
+                scene.remove(workpiece)
+              }
+              workpiece = result
+              successfulOperations++
+
+              // Add progress indicator
+              const progress = Math.round((successfulOperations / totalOperations) * 100)
+              console.log(`    ✅ Success! Progress: ${progress}%`)
+            } else {
+              console.warn(`    ❌ CSG operation failed for ${layerName}`)
+            }
+          } catch (error) {
+            console.error(`    💥 CSG operation error for ${layerName}:`, error)
+          }
+
+          // Small delay to prevent UI blocking
+          if (i % 5 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 10))
+          }
+        }
+      }
+    }
+  }
+
+  // Finalize the result
+  if (workpiece !== baseLayer.mesh && successfulOperations > 0) {
+    scene.remove(baseLayer.mesh)
+    scene.add(workpiece)
+    baseLayer.mesh = workpiece
+
+    // Update material to show machined surface
+    workpiece.material = new THREE.MeshLambertMaterial({
+      color: 0xDEB887, // Machined wood color
+      transparent: true,
+      opacity: 0.95
+    })
+
+    // Hide tool objects
+    scene.children.filter(child => child.userData?.isToolObject).forEach(toolMesh => {
+      toolMesh.visible = false
+    })
+
+    console.log(`🎉 Toolpath CSG completed! ${successfulOperations}/${totalOperations} operations successful`)
+  } else {
+    console.log('ℹ️ No toolpath CSG operations were applied')
+  }
+}
+
+
+
+
+
+// Door dimensions from TurtleCanvas.vue (actual model dimensions)
 const DOOR_WIDTH = 500
 const DOOR_HEIGHT = 700
 const DOOR_THICKNESS = 18
+
+// Coordinate conversion from 2D canvas to 3D scene
+const convert2DTo3D = (command: DrawCommand) => {
+  // Apply the same coordinate transformations as TurtleCanvas.vue
+  const gridSize = 20
+  const offset = 20
+  const materialThickness = 18
+  const X = 540 // Door width from ADekoLib
+  const bottomFaceOriginX = 20 + 4 * offset + X + 2 * materialThickness // 616
+
+  // Determine face type and apply appropriate offsets (matching TurtleCanvas.vue exactly)
+  const hasSFSuffix = command.layer_name && command.layer_name.includes('_SF')
+  const isBottomFaceCommand = command.x1 >= bottomFaceOriginX || hasSFSuffix
+
+  let gridOffsetX = 0
+  let gridOffsetY = 0
+
+  if (isBottomFaceCommand) {
+    // Bottom face operations (matching TurtleCanvas.vue)
+    gridOffsetX = 620
+    gridOffsetY = -100
+  } else {
+    // Top face operations (matching TurtleCanvas.vue)
+    gridOffsetX = 1 * gridSize
+    gridOffsetY = -5 * gridSize + 4
+  }
+
+  // Apply the same transformations as TurtleCanvas.vue
+  const canvas_x1 = command.x1 + gridOffsetX
+  const canvas_y1 = -command.y1 + gridOffsetY
+  const canvas_x2 = command.x2 + gridOffsetX
+  const canvas_y2 = -command.y2 + gridOffsetY
+
+  // Convert from canvas coordinates to 3D world coordinates
+  // Map canvas coordinates to door dimensions (DOOR_WIDTH x DOOR_HEIGHT)
+  const scale = 1.0 // Use 1:1 scale for better precision
+  const doorCenterX = DOOR_WIDTH / 2  // 250
+  const doorCenterZ = DOOR_HEIGHT / 2 // 350
+
+  const x1_3d = (canvas_x1 - doorCenterX) * scale  // Center around door center
+  const y1_3d = (canvas_y1 - doorCenterZ) * scale  // Center around door center
+  const x2_3d = (canvas_x2 - doorCenterX) * scale
+  const y2_3d = (canvas_y2 - doorCenterZ) * scale
+
+  // Debug logging for coordinate conversion (disabled for performance)
+  // console.log(`🔄 Converting 2D to 3D coordinates:`, {
+  //   layer: command.layer_name,
+  //   original2D: `(${command.x1}, ${command.y1}) -> (${command.x2}, ${command.y2})`,
+  //   canvas2D: `(${canvas_x1}, ${canvas_y1}) -> (${canvas_x2}, ${canvas_y2})`,
+  //   converted3D: `(${x1_3d.toFixed(1)}, ${y1_3d.toFixed(1)}) -> (${x2_3d.toFixed(1)}, ${y2_3d.toFixed(1)})`,
+  //   offsets: `(${gridOffsetX}, ${gridOffsetY})`,
+  //   isBottomFace: isBottomFaceCommand
+  // })
+
+  return {
+    x1: x1_3d,
+    y1: y1_3d,
+    x2: x2_3d,
+    y2: y2_3d,
+    isBottomFace: isBottomFaceCommand
+  }
+}
 
 // CSG operations state
 const currentOperation = ref<'union' | 'subtract' | 'intersect'>('subtract')
@@ -311,34 +645,32 @@ const initThreeJS = () => {
   // Create door base geometry
   createDoorBase()
 
-  // Add grid helper
-  const gridHelper = new THREE.GridHelper(1000, 50, 0x888888, 0xcccccc)
-  scene.add(gridHelper)
-
-  // Add axes helper
-  const axesHelper = new THREE.AxesHelper(100)
-  scene.add(axesHelper)
-
   // Start render loop
   animate()
 }
 
 // Create the base door geometry
 const createDoorBase = () => {
-  const geometry = new THREE.BoxGeometry(DOOR_WIDTH, DOOR_HEIGHT, DOOR_THICKNESS)
-  const material = new THREE.MeshLambertMaterial({ 
+  // Create door geometry with correct orientation
+  // In 3D: X = width, Y = thickness (depth), Z = height
+  const geometry = new THREE.BoxGeometry(DOOR_WIDTH, DOOR_THICKNESS, DOOR_HEIGHT)
+  const material = new THREE.MeshLambertMaterial({
     color: 0x8B4513,
     transparent: true,
     opacity: 0.8
   })
-  
+
   const doorMesh = new THREE.Mesh(geometry, material)
-  doorMesh.position.set(0, DOOR_HEIGHT / 2, 0)
+  // Position door so the top surface is at Y=0 for easier tool positioning
+  // Door extends from Y=0 (top surface) to Y=-18 (bottom surface)
+  doorMesh.position.set(0, -DOOR_THICKNESS/2, 0)
   doorMesh.castShadow = true
   doorMesh.receiveShadow = true
-  
+
+  console.log(`🚪 Door positioned at Y=${doorMesh.position.y}, surface at Y=0, extends to Y=${-DOOR_THICKNESS}`)
+
   scene.add(doorMesh)
-  
+
   // Store in base layer
   const baseLayer = operationLayers.value.find(l => l.id === 'base')
   if (baseLayer) {
@@ -361,6 +693,142 @@ const animate = () => {
 // CSG operation methods
 const setOperation = (operation: 'union' | 'subtract' | 'intersect') => {
   currentOperation.value = operation
+}
+
+// Convert operation string to CSG constant
+const getCSGOperation = (operation: 'union' | 'subtract' | 'intersect') => {
+  switch (operation) {
+    case 'union':
+      return ADDITION
+    case 'subtract':
+      return SUBTRACTION
+    case 'intersect':
+      return INTERSECTION
+    default:
+      return SUBTRACTION
+  }
+}
+
+// Perform CSG operation between two meshes
+const performCSGOperation = (meshA: THREE.Mesh, meshB: THREE.Mesh, operation: 'union' | 'subtract' | 'intersect'): THREE.Mesh | null => {
+  try {
+    // Create Brush objects from meshes
+    const brushA = new Brush(meshA.geometry, meshA.material)
+    brushA.position.copy(meshA.position)
+    brushA.rotation.copy(meshA.rotation)
+    brushA.scale.copy(meshA.scale)
+    brushA.updateMatrixWorld()
+
+    const brushB = new Brush(meshB.geometry, meshB.material)
+    brushB.position.copy(meshB.position)
+    brushB.rotation.copy(meshB.rotation)
+    brushB.scale.copy(meshB.scale)
+    brushB.updateMatrixWorld()
+
+    // Perform CSG operation
+    const csgOperation = getCSGOperation(operation)
+    const result = csgEvaluator.evaluate(brushA, brushB, csgOperation)
+
+    // Create result mesh
+    const resultMesh = new THREE.Mesh(result.geometry, meshA.material)
+    resultMesh.position.copy(meshA.position)
+    resultMesh.rotation.copy(meshA.rotation)
+    resultMesh.scale.copy(meshA.scale)
+    resultMesh.castShadow = true
+    resultMesh.receiveShadow = true
+
+    return resultMesh
+  } catch (error) {
+    console.error('CSG operation failed:', error)
+    return null
+  }
+}
+
+// Apply CSG operations to all tool objects against the door base
+const applyCSGOperations = () => {
+  const baseLayer = operationLayers.value.find(l => l.id === 'base')
+  if (!baseLayer || !baseLayer.mesh) {
+    console.warn('No base mesh found for CSG operations')
+    return
+  }
+
+  console.log('🔧 Starting toolpath CSG operations...')
+
+  // Group tool objects by layer for organized processing
+  const toolObjectsByLayer = groupToolObjectsByLayer()
+
+  if (toolObjectsByLayer.size === 0) {
+    console.log(' No tool objects found for CSG operations')
+    console.log('🔧 Creating tool objects from draw commands first...')
+    createToolObjects()
+
+    // Try again after creating tool objects
+    const newToolObjectsByLayer = groupToolObjectsByLayer()
+    if (newToolObjectsByLayer.size === 0) {
+      console.warn('⚠️ Still no tool objects found after creation attempt')
+      return
+    }
+    console.log(`✅ Created tool objects for ${newToolObjectsByLayer.size} layers`)
+  }
+
+  let workpiece = baseLayer.mesh.clone()
+  let operationCount = 0
+
+  // Process each layer in order (roughing first, then finishing, etc.)
+  const layerOrder = ['roughing', 'drilling', 'pocketing', 'profiling', 'finishing']
+
+  layerOrder.forEach(operationType => {
+    toolObjectsByLayer.forEach((toolObjects, layerName) => {
+      const layerOperation = detectOperationFromLayer(layerName)
+
+      if (layerOperation === operationType) {
+        console.log(`🔨 Processing ${layerName} (${operationType}) - ${toolObjects.length} operations`)
+
+        toolObjects.forEach((toolMesh, index) => {
+          const operation = getOperationForLayer(layerName, toolMesh.userData.operation)
+
+          console.log(`  ⚙️ Operation ${operationCount + 1}: ${operation} with ${toolMesh.userData.tool?.name || 'unknown tool'}`)
+
+          const result = performCSGOperation(workpiece, toolMesh, operation)
+          if (result) {
+            // Remove old workpiece from scene if it's not the original
+            if (workpiece !== baseLayer.mesh) {
+              scene.remove(workpiece)
+            }
+            workpiece = result
+            operationCount++
+          } else {
+            console.warn(`    ❌ CSG operation failed for ${layerName}`)
+          }
+        })
+      }
+    })
+  })
+
+  // Replace base mesh with final result
+  if (workpiece !== baseLayer.mesh && operationCount > 0) {
+    scene.remove(baseLayer.mesh)
+    scene.add(workpiece)
+    baseLayer.mesh = workpiece
+
+    // Update workpiece material to show it's been machined
+    if (workpiece.material instanceof THREE.Material) {
+      workpiece.material = new THREE.MeshLambertMaterial({
+        color: 0xDEB887, // Lighter wood color to show machining
+        transparent: true,
+        opacity: 0.9
+      })
+    }
+
+    // Hide tool objects after CSG operations
+    scene.children.filter(child => child.userData?.isToolObject).forEach(toolMesh => {
+      toolMesh.visible = false
+    })
+
+    console.log(`✅ CSG operations completed! Applied ${operationCount} operations to workpiece`)
+  } else {
+    console.log('ℹ️ No CSG operations were applied')
+  }
 }
 
 const addLayer = () => {
@@ -474,22 +942,22 @@ const toggleOrthographic = () => {
 // Predefined view positions
 const setView = (viewType: 'front' | 'back' | 'top' | 'right' | 'iso') => {
   const distance = 600
-  const center = new THREE.Vector3(0, DOOR_HEIGHT / 2, 0)
+  const center = new THREE.Vector3(0, 0, 0)  // Door is now centered at origin
 
   let position: THREE.Vector3
 
   switch (viewType) {
     case 'front':
-      position = new THREE.Vector3(0, DOOR_HEIGHT / 2, distance)
+      position = new THREE.Vector3(0, 0, distance)
       break
     case 'back':
-      position = new THREE.Vector3(0, DOOR_HEIGHT / 2, -distance)
+      position = new THREE.Vector3(0, 0, -distance)
       break
     case 'top':
-      position = new THREE.Vector3(0, distance + DOOR_HEIGHT / 2, 0)
+      position = new THREE.Vector3(0, distance, 0)
       break
     case 'right':
-      position = new THREE.Vector3(distance, DOOR_HEIGHT / 2, 0)
+      position = new THREE.Vector3(distance, 0, 0)
       break
     case 'iso':
     default:
@@ -604,13 +1072,28 @@ const createToolObjects = () => {
     // Detect operation type from layer name
     const operation = detectOperationFromLayer(layerName)
 
-    // Create enhanced tool meshes for operations
-    const toolMeshes = cncToolService.createOperationToolMeshes(commands, tool, operation, thickness)
+    // Convert 2D coordinates to 3D for all commands
+    const convertedCommands = commands.map(cmd => {
+      const coords3D = convert2DTo3D(cmd)
+      return {
+        ...cmd,
+        x1_3d: coords3D.x1,
+        y1_3d: coords3D.y1,
+        x2_3d: coords3D.x2,
+        y2_3d: coords3D.y2,
+        isBottomFace: coords3D.isBottomFace
+      }
+    })
+
+    // Create enhanced tool meshes for operations with converted coordinates
+    const toolMeshes = cncToolService.createOperationToolMeshes(convertedCommands, tool, operation, thickness)
 
     toolMeshes.forEach((toolMesh, index) => {
       toolMesh.userData.isToolObject = true
       toolMesh.userData.layerName = layerName
       toolMesh.userData.toolIndex = index
+      toolMesh.userData.tool = tool
+      toolMesh.userData.operation = operation
 
       // Set material color based on tool type
       const material = toolMesh.material as THREE.MeshLambertMaterial
@@ -632,13 +1115,22 @@ const createToolObjects = () => {
           break
       }
 
+      // Debug logging for tool positioning
+      console.log(`  ➕ Added tool mesh ${index + 1}/${toolMeshes.length} for ${layerName}:`, {
+        position: `(${toolMesh.position.x.toFixed(1)}, ${toolMesh.position.y.toFixed(1)}, ${toolMesh.position.z.toFixed(1)})`,
+        tool: tool.name,
+        operation: operation
+      })
+
       scene.add(toolMesh)
     })
   })
 }
 
 // Tool icon helper
-const getToolIcon = (shape: string) => {
+const getToolIcon = (shape: string | undefined | null) => {
+  if (!shape) return Circle
+
   const icons = {
     cylindrical: Circle,
     conical: Triangle,
@@ -649,42 +1141,7 @@ const getToolIcon = (shape: string) => {
   return icons[shape as keyof typeof icons] || Circle
 }
 
-// Detect operation type from layer name
-const detectOperationFromLayer = (layerName: string): string => {
-  const layer = layerName.toLowerCase()
 
-  if (layer.includes('roughing') || layer.includes('kaba') || layer.includes('rough')) {
-    return 'roughing'
-  }
-  if (layer.includes('finishing') || layer.includes('son') || layer.includes('finish')) {
-    return 'finishing'
-  }
-  if (layer.includes('pocket') || layer.includes('cep') || layer.includes('oyuk')) {
-    return 'pocketing'
-  }
-  if (layer.includes('drill') || layer.includes('delme') || layer.includes('hole')) {
-    return 'drilling'
-  }
-  if (layer.includes('profile') || layer.includes('profil') || layer.includes('contour')) {
-    return 'profiling'
-  }
-  if (layer.includes('v_') || layer.includes('v-') || layer.includes('groove')) {
-    return 'profiling'
-  }
-
-  // Default operation based on layer prefix
-  if (layer.startsWith('h_')) {
-    return 'profiling' // Contour operations
-  }
-  if (layer.startsWith('k_')) {
-    return 'profiling' // Groove operations
-  }
-  if (layer.startsWith('v_')) {
-    return 'profiling' // V-groove operations
-  }
-
-  return 'roughing' // Default operation
-}
 
 // Expose methods for parent component
 defineExpose({
@@ -694,7 +1151,10 @@ defineExpose({
   toggleOrthographic,
   setView,
   setOperation,
-  addLayer
+  addLayer,
+  applyCSGOperations,
+  applyToolpathCSG,
+  testCSGOperations
 })
 </script>
 
